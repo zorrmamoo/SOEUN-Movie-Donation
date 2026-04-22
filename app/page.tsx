@@ -5,15 +5,16 @@ import { useMemo, useState } from "react";
 
 const GOAL = 2000000;
 
-// 여기에 실제 후원 안내 링크가 있으면 넣어.
-// 예: 토스 프로필 링크, 노션 안내 페이지, 구글폼, 링크트리 등
-// 없으면 빈 문자열로 두면 됨.
-const BANK_TRANSFER_URL = "https://toss.me/yourlink";
-
-// 계좌 정보
 const BANK_NAME = "토스뱅크";
 const ACCOUNT_NUMBER = "1002-1311-4187";
 const ACCOUNT_HOLDER = "조소은";
+
+type CheerMessage = {
+  id: number;
+  nickname: string;
+  message: string;
+  color: string;
+};
 
 const stages = [
   {
@@ -53,20 +54,65 @@ const stages = [
   },
 ];
 
-type MoneyDrop = {
-  id: number;
-  left: number;
-  delay: number;
-  size: number;
-  rotate: number;
-};
+const supporterPositions = [
+  { left: "14%", bottom: "64px" },
+  { left: "25%", bottom: "28px" },
+  { left: "73%", bottom: "34px" },
+  { left: "84%", bottom: "68px" },
+  { left: "10%", bottom: "140px" },
+  { left: "87%", bottom: "150px" },
+];
+
+const avatarColors = [
+  "#ffd166",
+  "#ef476f",
+  "#06d6a0",
+  "#118ab2",
+  "#bdb2ff",
+  "#ff99c8",
+  "#90dbf4",
+  "#caffbf",
+];
+
+function getRandomColor() {
+  return avatarColors[Math.floor(Math.random() * avatarColors.length)];
+}
+
+function getInitial(name: string) {
+  const trimmed = name.trim();
+  if (!trimmed) return "익";
+  return trimmed[0];
+}
 
 export default function Page() {
-  const [amount, setAmount] = useState(0);
+  const [amount] = useState(0);
   const [isCheering, setIsCheering] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
-  const [drops, setDrops] = useState<MoneyDrop[]>([]);
-  const [copyMessage, setCopyMessage] = useState("");
+  const [bubbleMessage, setBubbleMessage] = useState("");
+
+  const [nickname, setNickname] = useState("");
+  const [cheerText, setCheerText] = useState("");
+
+  const [messages, setMessages] = useState<CheerMessage[]>([
+    {
+      id: 1,
+      nickname: "익명",
+      message: "졸업까지 끝까지 화이팅!",
+      color: "#ffd166",
+    },
+    {
+      id: 2,
+      nickname: "친구",
+      message: "조소은의 영화 꼭 보고 싶어",
+      color: "#90dbf4",
+    },
+    {
+      id: 3,
+      nickname: "촬영팀",
+      message: "끝까지 완주하자",
+      color: "#ff99c8",
+    },
+  ]);
 
   const currentStageIndex = useMemo(() => {
     if (amount >= 1600000) return 4;
@@ -91,56 +137,50 @@ export default function Page() {
 
     setShowBanner(true);
     window.setTimeout(() => setShowBanner(false), 2200);
-
-    const newDrops: MoneyDrop[] = Array.from({ length: 14 }).map(
-      (_, index) => ({
-        id: Date.now() + index,
-        left: 5 + Math.random() * 85,
-        delay: Math.random() * 0.35,
-        size: 24 + Math.random() * 10,
-        rotate: -18 + Math.random() * 36,
-      })
-    );
-
-    setDrops(newDrops);
-    window.setTimeout(() => setDrops([]), 2200);
   };
 
-  const copyAccount = async () => {
+  const handleAddMessage = () => {
+    const trimmedNickname = nickname.trim();
+    const trimmedMessage = cheerText.trim();
+
+    if (!trimmedMessage) return;
+
+    const displayName = trimmedNickname || "익명";
+
+    const newMessage: CheerMessage = {
+      id: Date.now(),
+      nickname: displayName,
+      message: trimmedMessage,
+      color: getRandomColor(),
+    };
+
+    setMessages((prev) => [newMessage, ...prev].slice(0, 6));
+    setBubbleMessage(`${displayName}: ${trimmedMessage}`);
+    triggerCelebration();
+
+    window.setTimeout(() => {
+      setBubbleMessage("");
+    }, 3000);
+
+    setNickname("");
+    setCheerText("");
+  };
+
+  const handleCopyAccount = async () => {
     try {
       await navigator.clipboard.writeText(
         `${BANK_NAME} ${ACCOUNT_NUMBER} ${ACCOUNT_HOLDER}`
       );
-      setCopyMessage("계좌번호가 복사되었어요.");
-    } catch {
-      setCopyMessage("복사에 실패했어요.");
-    }
-
-    window.setTimeout(() => setCopyMessage(""), 1800);
-  };
-
-  const goToDonationLink = () => {
-    if (BANK_TRANSFER_URL.trim()) {
-      window.open(BANK_TRANSFER_URL, "_blank", "noopener,noreferrer");
-    }
-  };
-
-  const handleDonate = async (value: number) => {
-    setAmount((prev: number) => Math.min(prev + value, GOAL));
-  
-    triggerCelebration();
-  
-    await copyAccount();
-  
-    if (DONATION_LINK.trim()) {
+      setBubbleMessage("계좌번호가 복사되었어요!");
       window.setTimeout(() => {
-        window.open(DONATION_LINK, "_blank", "noopener,noreferrer");
-      }, 500);
+        setBubbleMessage("");
+      }, 2200);
+    } catch {
+      setBubbleMessage("복사에 실패했어요.");
+      window.setTimeout(() => {
+        setBubbleMessage("");
+      }, 2200);
     }
-  };
-
-  const handleScreenTap = () => {
-    triggerCelebration();
   };
 
   return (
@@ -148,20 +188,20 @@ export default function Page() {
       <div className="page-wrap">
         <header className="title-area">
           <h1>조소은 졸업시키기</h1>
-          <p>
-            후원하면 캐릭터가 춤추고, 돈이 떨어지고, 현수막이 나오는 졸업 키우기
-            게임
-          </p>
+          <p>후원은 계좌로, 응원은 메시지로 남겨주세요</p>
         </header>
 
         <section className="money-panel">
-          <div className="money-label">현재 후원 금액</div>
+          <div className="money-label">목표 금액</div>
           <div className="money-value">
             {amount.toLocaleString()}원 / {GOAL.toLocaleString()}원
           </div>
 
           <div className="progress-bar">
-            <div className="progress-fill" style={{ width: `${progress}%` }} />
+            <div
+              className="progress-fill"
+              style={{ width: `${progress}%` }}
+            />
           </div>
 
           <div className="stage-text">현재 단계: {currentStage.name}</div>
@@ -171,20 +211,14 @@ export default function Page() {
           {stages.map((stage, index) => (
             <div
               key={stage.name}
-              className={`stage-card ${
-                currentStageIndex === index ? "active" : ""
-              }`}
+              className={`stage-card ${currentStageIndex === index ? "active" : ""}`}
             >
               {stage.name}
             </div>
           ))}
         </section>
 
-        <section
-          className="game-screen"
-          onClick={handleScreenTap}
-          onTouchStart={handleScreenTap}
-        >
+        <section className="game-screen">
           <Image
             src={currentStage.background}
             alt={currentStage.name}
@@ -200,40 +234,47 @@ export default function Page() {
             </div>
           )}
 
-          {drops.map((drop) => (
-            <div
-              key={drop.id}
-              className="money-drop"
-              style={{
-                left: `${drop.left}%`,
-                animationDelay: `${drop.delay}s`,
-                fontSize: `${drop.size}px`,
-                rotate: `${drop.rotate}deg`,
-              }}
-            >
-              💸💰
+          {bubbleMessage && (
+            <div className="speech-bubble">
+              {bubbleMessage}
             </div>
-          ))}
+          )}
+
+          {messages.slice(0, 6).map((msg, index) => {
+            const pos = supporterPositions[index];
+            if (!pos) return null;
+
+            return (
+              <div
+                key={msg.id}
+                className="supporter-avatar"
+                style={{
+                  left: pos.left,
+                  bottom: pos.bottom,
+                  background: msg.color,
+                }}
+                title={`${msg.nickname}: ${msg.message}`}
+              >
+                {getInitial(msg.nickname)}
+              </div>
+            );
+          })}
 
           <div className="character-shadow" />
 
           <div className="character-wrap">
-            <div
-              className={
-                isCheering ? "character-inner dance-bounce" : "character-inner"
-              }
-            >
+            <div className={isCheering ? "character-inner dance-bounce" : "character-inner"}>
               <Image
                 src={currentCharacterSrc}
                 alt="캐릭터"
                 fill
-                sizes="260px"
+                sizes="380px"
                 className="character-image"
               />
             </div>
           </div>
 
-          <div className="tap-guide">화면을 누르면 캐릭터가 반응해요</div>
+          <div className="tap-guide">응원 메시지를 남기면 캐릭터가 반응해요</div>
         </section>
 
         <section className="info-grid">
@@ -243,33 +284,58 @@ export default function Page() {
             <p>{ACCOUNT_NUMBER}</p>
             <p>{ACCOUNT_HOLDER}</p>
 
-            <button className="secondary-btn" onClick={copyAccount}>
+            <button className="secondary-btn" onClick={handleCopyAccount}>
               계좌번호 복사
             </button>
-
-            {copyMessage && <div className="copy-message">{copyMessage}</div>}
           </div>
 
-          <div className="donation-card">
-            <h3>후원하기</h3>
-            <div className="button-grid">
-              {[10000, 30000, 50000, 100000].map((value) => (
-                <button
-                  key={value}
-                  className="donate-btn"
-                  onClick={() => handleDonate(value)}
-                >
-                  {value.toLocaleString()}원
-                </button>
-              ))}
-            </div>
+          <div className="message-card">
+            <h3>응원 메시지 남기기</h3>
 
-            <p className="donation-help">
-              버튼을 누르면 캐릭터가 춤추고, 계좌번호가 복사돼요.
-              {BANK_TRANSFER_URL.trim()
-                ? " 등록한 후원 링크도 함께 열립니다."
-                : " 후원 링크를 따로 쓰려면 page.tsx의 BANK_TRANSFER_URL에 넣어주세요."}
-            </p>
+            <input
+              className="message-input"
+              type="text"
+              placeholder="닉네임 또는 이름"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+            />
+
+            <textarea
+              className="message-textarea"
+              placeholder="응원의 한마디를 남겨주세요"
+              value={cheerText}
+              onChange={(e) => setCheerText(e.target.value)}
+            />
+
+            <button className="submit-btn" onClick={handleAddMessage}>
+              등록하기
+            </button>
+
+            <div className="message-help">
+              메시지를 등록하면 캐릭터 옆에 응원 아바타가 생겨요
+            </div>
+          </div>
+        </section>
+
+        <section className="message-list-card">
+          <h3>응원 메시지</h3>
+
+          <div className="message-list">
+            {messages.map((msg) => (
+              <div key={msg.id} className="message-item">
+                <div
+                  className="message-avatar"
+                  style={{ background: msg.color }}
+                >
+                  {getInitial(msg.nickname)}
+                </div>
+
+                <div className="message-content">
+                  <div className="message-name">{msg.nickname}</div>
+                  <div className="message-body">{msg.message}</div>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
       </div>
