@@ -128,10 +128,10 @@ button {
 .character-wrap {
   position: absolute;
   left: 50%;
-  bottom: 24px;
+  bottom: 10px;
   transform: translateX(-50%);
-  width: 260px;
-  height: 260px;
+  width: 420px;
+  height: 420px;
   z-index: 4;
   pointer-events: none;
 }
@@ -172,13 +172,13 @@ button {
 
 .thanks-banner {
   position: absolute;
-  top: 16px;
+  top: 40px;
   left: 50%;
   transform: translateX(-50%);
   background: #fff17a;
   color: black;
-  border: 3px solid black;
-  padding: 10px 16px;
+  border: 7px solid black;
+  padding: 20px 32px;
   font-weight: 900;
   z-index: 7;
   white-space: nowrap;
@@ -255,7 +255,7 @@ button {
 }
 
 .dance-bounce {
-  animation: danceBounce 0.9s ease;
+  animation: danceBounce 1.8s ease;
 }
 
 @keyframes danceBounce {

@@ -3,12 +3,12 @@
 import Image from "next/image";
 import { useMemo, useState } from "react";
 
-const GOAL = 3000000;
+const GOAL = 2000000;
 
 // 여기에 실제 후원 안내 링크가 있으면 넣어.
 // 예: 토스 프로필 링크, 노션 안내 페이지, 구글폼, 링크트리 등
 // 없으면 빈 문자열로 두면 됨.
-const BANK_TRANSFER_URL = "";
+const BANK_TRANSFER_URL = "https://toss.me/yourlink";
 
 // 계좌 정보
 const BANK_NAME = "토스뱅크";
@@ -28,28 +28,28 @@ const stages = [
     idle: "/assets/characters/grade2_study.png",
     cheer: "/assets/characters/grade2_happy.png",
     background: "/assets/backgrounds/grade2_bg.png",
-    min: 600000,
+    min: 400000,
   },
   {
     name: "3학년",
     idle: "/assets/characters/grade3_shoot.png",
     cheer: "/assets/characters/grade3_happy.png",
     background: "/assets/backgrounds/grade3_bg.png",
-    min: 1200000,
+    min: 800000,
   },
   {
     name: "4학년",
     idle: "/assets/characters/grade4_edit.png",
     cheer: "/assets/characters/grade4_happy.png",
     background: "/assets/backgrounds/grade4_bg.png",
-    min: 1800000,
+    min: 1200000,
   },
   {
     name: "5학년",
     idle: "/assets/characters/grade5_graduate.png",
     cheer: "/assets/characters/grade5_happy.png",
     background: "/assets/backgrounds/grade5_bg.png",
-    min: 2400000,
+    min: 1600000,
   },
 ];
 
@@ -69,10 +69,10 @@ export default function Page() {
   const [copyMessage, setCopyMessage] = useState("");
 
   const currentStageIndex = useMemo(() => {
-    if (amount >= 2400000) return 4;
-    if (amount >= 1800000) return 3;
-    if (amount >= 1200000) return 2;
-    if (amount >= 600000) return 1;
+    if (amount >= 1600000) return 4;
+    if (amount >= 1200000) return 3;
+    if (amount >= 800000) return 2;
+    if (amount >= 400000) return 1;
     return 0;
   }, [amount]);
 
@@ -86,11 +86,11 @@ export default function Page() {
   const triggerCelebration = () => {
     if (!isCheering) {
       setIsCheering(true);
-      window.setTimeout(() => setIsCheering(false), 900);
+      window.setTimeout(() => setIsCheering(false), 1800);
     }
 
     setShowBanner(true);
-    window.setTimeout(() => setShowBanner(false), 1400);
+    window.setTimeout(() => setShowBanner(false), 2200);
 
     const newDrops: MoneyDrop[] = Array.from({ length: 14 }).map(
       (_, index) => ({
@@ -103,7 +103,7 @@ export default function Page() {
     );
 
     setDrops(newDrops);
-    window.setTimeout(() => setDrops([]), 1400);
+    window.setTimeout(() => setDrops([]), 2200);
   };
 
   const copyAccount = async () => {
@@ -126,10 +126,17 @@ export default function Page() {
   };
 
   const handleDonate = async (value: number) => {
-    setAmount((prev) => Math.min(prev + value, GOAL));
+    setAmount((prev: number) => Math.min(prev + value, GOAL));
+  
     triggerCelebration();
+  
     await copyAccount();
-    goToDonationLink();
+  
+    if (DONATION_LINK.trim()) {
+      window.setTimeout(() => {
+        window.open(DONATION_LINK, "_blank", "noopener,noreferrer");
+      }, 500);
+    }
   };
 
   const handleScreenTap = () => {
@@ -204,7 +211,7 @@ export default function Page() {
                 rotate: `${drop.rotate}deg`,
               }}
             >
-              💸
+              💸💰
             </div>
           ))}
 
@@ -246,7 +253,7 @@ export default function Page() {
           <div className="donation-card">
             <h3>후원하기</h3>
             <div className="button-grid">
-              {[1000, 5000, 10000, 50000].map((value) => (
+              {[10000, 30000, 50000, 100000].map((value) => (
                 <button
                   key={value}
                   className="donate-btn"
