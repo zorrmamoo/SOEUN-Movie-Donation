@@ -219,6 +219,28 @@ textarea {
   transform: rotate(45deg);
 }
 
+.money-drop {
+  position: absolute;
+  top: 36px;
+  z-index: 18;
+  animation: moneyFall 1s ease-in forwards;
+  pointer-events: none;
+}
+
+@keyframes moneyFall {
+  0% {
+    transform: translateY(-30px);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(330px);
+    opacity: 0;
+  }
+}
+
 .supporter-wrap {
   position: absolute;
   z-index: 10;
@@ -290,8 +312,25 @@ textarea {
   background: #000;
 }
 
+.supporter-image-box {
+  width: 96px;
+  height: 96px;
+  border: 4px solid #000;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.25);
+}
+
+.supporter-image-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: pixelated;
+  display: block;
+}
+
 .supporter-chat {
-  max-width: 160px;
+  max-width: 170px;
   background: #fff8d6;
   color: #111;
   border: 4px solid #000;
@@ -342,20 +381,36 @@ textarea {
 }
 
 .secondary-btn,
-.submit-btn {
+.submit-btn,
+.donate-btn {
   margin-top: 12px;
   padding: 12px 14px;
-  background: #f2e27c;
-  color: black;
   border: 4px solid black;
   font-weight: 900;
   cursor: pointer;
+}
+
+.secondary-btn {
+  background: #f2e27c;
+  color: black;
 }
 
 .submit-btn {
   background: #ff7ea8;
   color: white;
   width: 100%;
+}
+
+.donate-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.donate-btn {
+  background: #7ed6ff;
+  color: #111;
 }
 
 .copy-message {
@@ -365,7 +420,8 @@ textarea {
 }
 
 .message-input,
-.message-textarea {
+.message-textarea,
+.message-file-input {
   width: 100%;
   background: #fff;
   color: #111;
@@ -408,6 +464,23 @@ textarea {
   height: 56px;
   border: 3px solid #000;
   flex-shrink: 0;
+}
+
+.message-uploaded-avatar-box {
+  width: 64px;
+  height: 64px;
+  border: 3px solid #000;
+  background: #fff;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.message-uploaded-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: pixelated;
+  display: block;
 }
 
 .message-content {
@@ -561,5 +634,10 @@ textarea {
   .supporter-name,
   .supporter-text {
     font-size: 11px;
+  }
+
+  .supporter-image-box {
+    width: 72px;
+    height: 72px;
   }
 }
