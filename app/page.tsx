@@ -14,6 +14,8 @@ type CheerMessage = {
   nickname: string;
   message: string;
   color: string;
+  x: string;
+  y: string;
 };
 
 const stages = [
@@ -54,13 +56,13 @@ const stages = [
   },
 ];
 
-const supporterPositions = [
-  { left: "14%", bottom: "64px" },
-  { left: "25%", bottom: "28px" },
-  { left: "73%", bottom: "34px" },
-  { left: "84%", bottom: "68px" },
-  { left: "10%", bottom: "140px" },
-  { left: "87%", bottom: "150px" },
+const supporterSpots = [
+  { x: "10%", y: "68px" },
+  { x: "20%", y: "18px" },
+  { x: "76%", y: "20px" },
+  { x: "86%", y: "82px" },
+  { x: "8%", y: "160px" },
+  { x: "82%", y: "160px" },
 ];
 
 const avatarColors = [
@@ -78,17 +80,12 @@ function getRandomColor() {
   return avatarColors[Math.floor(Math.random() * avatarColors.length)];
 }
 
-function getInitial(name: string) {
-  const trimmed = name.trim();
-  if (!trimmed) return "익";
-  return trimmed[0];
-}
-
 export default function Page() {
   const [amount] = useState(0);
   const [isCheering, setIsCheering] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
   const [bubbleMessage, setBubbleMessage] = useState("");
+  const [copyMessage, setCopyMessage] = useState("");
 
   const [nickname, setNickname] = useState("");
   const [cheerText, setCheerText] = useState("");
@@ -99,18 +96,24 @@ export default function Page() {
       nickname: "익명",
       message: "졸업까지 끝까지 화이팅!",
       color: "#ffd166",
+      x: "10%",
+      y: "68px",
     },
     {
       id: 2,
       nickname: "친구",
       message: "조소은의 영화 꼭 보고 싶어",
       color: "#90dbf4",
+      x: "20%",
+      y: "18px",
     },
     {
       id: 3,
       nickname: "촬영팀",
       message: "끝까지 완주하자",
       color: "#ff99c8",
+      x: "86%",
+      y: "82px",
     },
   ]);
 
@@ -123,7 +126,6 @@ export default function Page() {
   }, [amount]);
 
   const currentStage = stages[currentStageIndex];
-  const progress = Math.min((amount / GOAL) * 100, 100);
 
   const currentCharacterSrc = isCheering
     ? currentStage.cheer
@@ -146,15 +148,19 @@ export default function Page() {
     if (!trimmedMessage) return;
 
     const displayName = trimmedNickname || "익명";
+    const currentIndex = messages.length % supporterSpots.length;
+    const spot = supporterSpots[currentIndex];
 
     const newMessage: CheerMessage = {
       id: Date.now(),
       nickname: displayName,
       message: trimmedMessage,
       color: getRandomColor(),
+      x: spot.x,
+      y: spot.y,
     };
 
-    setMessages((prev) => [newMessage, ...prev].slice(0, 6));
+    setMessages((prev) => [...prev, newMessage].slice(-6));
     setBubbleMessage(`${displayName}: ${trimmedMessage}`);
     triggerCelebration();
 
@@ -171,16 +177,17 @@ export default function Page() {
       await navigator.clipboard.writeText(
         `${BANK_NAME} ${ACCOUNT_NUMBER} ${ACCOUNT_HOLDER}`
       );
+      setCopyMessage("계좌번호가 복사되었어요.");
       setBubbleMessage("계좌번호가 복사되었어요!");
-      window.setTimeout(() => {
-        setBubbleMessage("");
-      }, 2200);
     } catch {
+      setCopyMessage("복사에 실패했어요.");
       setBubbleMessage("복사에 실패했어요.");
-      window.setTimeout(() => {
-        setBubbleMessage("");
-      }, 2200);
     }
+
+    window.setTimeout(() => {
+      setCopyMessage("");
+      setBubbleMessage("");
+    }, 2200);
   };
 
   return (
@@ -200,7 +207,7 @@ export default function Page() {
           <div className="progress-bar">
             <div
               className="progress-fill"
-              style={{ width: `${progress}%` }}
+              style={{ width: `${Math.min((amount / GOAL) * 100, 100)}%` }}
             />
           </div>
 
@@ -240,25 +247,33 @@ export default function Page() {
             </div>
           )}
 
-          {messages.slice(0, 6).map((msg, index) => {
-            const pos = supporterPositions[index];
-            if (!pos) return null;
-
-            return (
+          {messages.map((msg) => (
+            <div
+              key={msg.id}
+              className="supporter-wrap"
+              style={{
+                left: msg.x,
+                bottom: msg.y,
+              }}
+            >
               <div
-                key={msg.id}
-                className="supporter-avatar"
-                style={{
-                  left: pos.left,
-                  bottom: pos.bottom,
-                  background: msg.color,
-                }}
+                className="supporter-pixel"
+                style={{ background: msg.color }}
                 title={`${msg.nickname}: ${msg.message}`}
               >
-                {getInitial(msg.nickname)}
+                <div className="supporter-face">
+                  <span className="eye left" />
+                  <span className="eye right" />
+                  <span className="mouth" />
+                </div>
               </div>
-            );
-          })}
+
+              <div className="supporter-chat">
+                <div className="supporter-name">{msg.nickname}</div>
+                <div className="supporter-text">{msg.message}</div>
+              </div>
+            </div>
+          ))}
 
           <div className="character-shadow" />
 
@@ -287,6 +302,8 @@ export default function Page() {
             <button className="secondary-btn" onClick={handleCopyAccount}>
               계좌번호 복사
             </button>
+
+            {copyMessage && <div className="copy-message">{copyMessage}</div>}
           </div>
 
           <div className="message-card">
@@ -312,7 +329,7 @@ export default function Page() {
             </button>
 
             <div className="message-help">
-              메시지를 등록하면 캐릭터 옆에 응원 아바타가 생겨요
+              메시지를 등록하면 화면에 픽셀 응원 아바타가 계속 남아요
             </div>
           </div>
         </section>
@@ -327,7 +344,11 @@ export default function Page() {
                   className="message-avatar"
                   style={{ background: msg.color }}
                 >
-                  {getInitial(msg.nickname)}
+                  <div className="mini-face">
+                    <span className="mini-eye left" />
+                    <span className="mini-eye right" />
+                    <span className="mini-mouth" />
+                  </div>
                 </div>
 
                 <div className="message-content">
