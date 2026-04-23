@@ -291,13 +291,13 @@ textarea {
   z-index: 10;
   display: flex;
   align-items: flex-end;
-  gap: 8px;
+  gap: 10px;
 }
 
 .supporter-pixel {
   position: relative;
-  width: 42px;
-  height: 52px;
+  width: 56px;
+  height: 70px;
   border: 4px solid #000;
   box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.25);
 }
@@ -305,10 +305,10 @@ textarea {
 .supporter-pixel::before {
   content: "";
   position: absolute;
-  left: 8px;
-  top: 6px;
-  width: 18px;
-  height: 18px;
+  left: 12px;
+  top: 8px;
+  width: 24px;
+  height: 24px;
   background: #ffe0bd;
   border: 3px solid #000;
 }
@@ -316,20 +316,20 @@ textarea {
 .supporter-pixel::after {
   content: "";
   position: absolute;
-  left: 10px;
-  bottom: 6px;
-  width: 16px;
-  height: 14px;
+  left: 14px;
+  bottom: 8px;
+  width: 20px;
+  height: 18px;
   background: #222;
   border: 3px solid #000;
 }
 
 .supporter-face {
   position: absolute;
-  left: 11px;
-  top: 10px;
-  width: 14px;
-  height: 10px;
+  left: 16px;
+  top: 13px;
+  width: 16px;
+  height: 12px;
 }
 
 .supporter-face .eye {
@@ -337,21 +337,21 @@ textarea {
   width: 3px;
   height: 3px;
   background: #000;
-  top: 1px;
+  top: 2px;
 }
 
 .supporter-face .eye.left {
-  left: 1px;
+  left: 2px;
 }
 
 .supporter-face .eye.right {
-  right: 1px;
+  right: 2px;
 }
 
 .supporter-face .mouth {
   position: absolute;
-  left: 4px;
-  bottom: 0;
+  left: 5px;
+  bottom: 1px;
   width: 6px;
   height: 2px;
   background: #000;
@@ -359,8 +359,8 @@ textarea {
 
 .supporter-image-frame {
   position: relative;
-  width: 64px;
-  height: 82px;
+  width: 86px;
+  height: 112px;
   image-rendering: pixelated;
   filter: drop-shadow(4px 4px 0 rgba(0, 0, 0, 0.25));
 }
@@ -368,9 +368,9 @@ textarea {
 .supporter-image-head {
   position: absolute;
   top: 0;
-  left: 8px;
-  width: 48px;
-  height: 48px;
+  left: 10px;
+  width: 66px;
+  height: 66px;
   border: 4px solid #000;
   background: #fff;
   overflow: hidden;
@@ -386,16 +386,16 @@ textarea {
 
 .supporter-image-body {
   position: absolute;
-  left: 14px;
+  left: 18px;
   bottom: 0;
-  width: 36px;
-  height: 26px;
+  width: 48px;
+  height: 34px;
   border: 4px solid #000;
   background: #ffd166;
 }
 
 .supporter-chat {
-  max-width: 170px;
+  max-width: 190px;
   background: #fff8d6;
   color: #111;
   border: 4px solid #000;
@@ -407,12 +407,12 @@ textarea {
 
 .supporter-name {
   font-weight: 900;
-  font-size: 12px;
+  font-size: 13px;
   margin-bottom: 4px;
 }
 
 .supporter-text {
-  font-size: 12px;
+  font-size: 13px;
   word-break: keep-all;
 }
 
@@ -526,15 +526,15 @@ textarea {
 
 .message-avatar {
   position: relative;
-  width: 46px;
-  height: 56px;
+  width: 52px;
+  height: 64px;
   border: 3px solid #000;
   flex-shrink: 0;
 }
 
 .message-uploaded-avatar-box {
-  width: 64px;
-  height: 64px;
+  width: 74px;
+  height: 74px;
   border: 3px solid #000;
   background: #fff;
   overflow: hidden;
@@ -565,8 +565,8 @@ textarea {
 
 .mini-face {
   position: absolute;
-  left: 12px;
-  top: 10px;
+  left: 14px;
+  top: 12px;
   width: 14px;
   height: 10px;
 }
@@ -599,10 +599,10 @@ textarea {
 .message-avatar::before {
   content: "";
   position: absolute;
-  left: 10px;
-  top: 6px;
-  width: 18px;
-  height: 18px;
+  left: 12px;
+  top: 8px;
+  width: 20px;
+  height: 20px;
   background: #ffe0bd;
   border: 3px solid #000;
 }
@@ -610,15 +610,14 @@ textarea {
 .message-avatar::after {
   content: "";
   position: absolute;
-  left: 12px;
-  bottom: 6px;
-  width: 16px;
-  height: 16px;
+  left: 14px;
+  bottom: 7px;
+  width: 18px;
+  height: 18px;
   background: #222;
   border: 3px solid #000;
 }
 
-/* 포스터 느낌 모달 */
 .movie-modal-overlay {
   position: fixed;
   inset: 0;
@@ -637,18 +636,25 @@ textarea {
   background: linear-gradient(135deg, #121212 0%, #1e1e1e 100%);
   border: 4px solid #000;
   box-shadow: 12px 12px 0 rgba(0, 0, 0, 0.45);
-  display: grid;
-  grid-template-columns: 340px 1fr;
   position: relative;
 }
 
+.movie-modal-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 12px 0;
+  background: linear-gradient(135deg, #121212 0%, #1e1e1e 100%);
+}
+
+.movie-poster-body {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+}
+
 .movie-modal-close {
-  position: absolute;
-  top: 12px;
-  right: 12px;
   background: #f2e27c;
   color: #111;
-  z-index: 3;
+  margin-top: 0;
 }
 
 .movie-poster-left {
@@ -823,7 +829,7 @@ textarea {
   }
 
   .supporter-chat {
-    max-width: 110px;
+    max-width: 130px;
   }
 
   .supporter-name,
@@ -831,24 +837,29 @@ textarea {
     font-size: 11px;
   }
 
+  .supporter-pixel {
+    width: 48px;
+    height: 60px;
+  }
+
   .supporter-image-frame {
-    width: 54px;
-    height: 72px;
+    width: 70px;
+    height: 92px;
   }
 
   .supporter-image-head {
-    width: 40px;
-    height: 40px;
-    left: 7px;
+    width: 54px;
+    height: 54px;
+    left: 8px;
   }
 
   .supporter-image-body {
-    width: 30px;
-    height: 22px;
-    left: 12px;
+    width: 40px;
+    height: 28px;
+    left: 16px;
   }
 
-  .movie-poster-modal {
+  .movie-poster-body {
     grid-template-columns: 1fr;
   }
 
@@ -861,4 +872,3 @@ textarea {
     font-size: 40px;
   }
 }
-
