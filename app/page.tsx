@@ -27,6 +27,18 @@ type MoneyDrop = {
   rotate: number;
 };
 
+const movieInfo = {
+  title: "가제: 조소은의 졸업영화",
+  genre: "오컬트 드라마",
+  runtime: "약 25분",
+  logline:
+    "고독사 현장을 마주하던 젊은 무당이 버려진 신당과 죽은 무당의 흔적을 통해, 자신 역시 같은 미래에 닿을지 모른다는 공포와 맞선다.",
+  synopsis:
+    "고독사 현장을 오가며 천도재를 돕는 젊은 무당 여진은 어느 날 은퇴한 무당이 홀로 죽은 공간과 마주한다. 방치된 신당, 끊어진 인간관계, 신에게도 사회에도 버려진 삶의 흔적은 여진에게 타인의 죽음이 아닌 자신의 미래처럼 다가온다. 죽은 무당의 그림자는 점점 여진의 삶을 잠식하고, 여진은 반복되는 고독과 버림의 구조를 끊기 위해 마지막 의식을 준비한다.",
+  note:
+    "이 영화는 고독사를 개인의 비극이 아니라 사회적 단절과 반복의 문제로 바라본다. 오컬트 장르의 형식을 통해 버려진 존재의 공포와, 그 공포가 다음 존재에게 어떻게 옮겨붙는지를 시각적으로 풀어내고자 한다.",
+};
+
 const stages = [
   {
     name: "1학년",
@@ -173,6 +185,7 @@ export default function Page() {
   const [copyMessage, setCopyMessage] = useState<string>("");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [drops, setDrops] = useState<MoneyDrop[]>([]);
+  const [isMovieModalOpen, setIsMovieModalOpen] = useState<boolean>(false);
 
   const [nickname, setNickname] = useState<string>("");
   const [cheerText, setCheerText] = useState<string>("");
@@ -323,8 +336,19 @@ export default function Page() {
     <main className="page-shell">
       <div className="page-wrap">
         <header className="title-area">
-          <h1>조소은 졸업시키기</h1>
-          <p>후원은 계좌로, 응원은 메시지와 아바타로 남겨주세요</p>
+          <div className="title-row">
+            <div>
+              <h1>조소은 졸업시키기</h1>
+              <p>후원은 계좌로, 응원은 메시지와 아바타로 남겨주세요</p>
+            </div>
+
+            <button
+              className="movie-info-btn"
+              onClick={() => setIsMovieModalOpen(true)}
+            >
+              영화 소개 보기
+            </button>
+          </div>
         </header>
 
         <section className="money-panel">
@@ -552,6 +576,49 @@ export default function Page() {
           </div>
         </section>
       </div>
+
+      {isMovieModalOpen && (
+        <div
+          className="movie-modal-overlay"
+          onClick={() => setIsMovieModalOpen(false)}
+        >
+          <div
+            className="movie-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="movie-modal-close"
+              onClick={() => setIsMovieModalOpen(false)}
+            >
+              닫기
+            </button>
+
+            <div className="movie-modal-content">
+              <h2>{movieInfo.title}</h2>
+
+              <div className="movie-meta">
+                <span>{movieInfo.genre}</span>
+                <span>{movieInfo.runtime}</span>
+              </div>
+
+              <div className="movie-section">
+                <h3>로그라인</h3>
+                <p>{movieInfo.logline}</p>
+              </div>
+
+              <div className="movie-section">
+                <h3>시놉시스</h3>
+                <p>{movieInfo.synopsis}</p>
+              </div>
+
+              <div className="movie-section">
+                <h3>연출의도</h3>
+                <p>{movieInfo.note}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
