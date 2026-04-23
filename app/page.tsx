@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const GOAL = 2000000;
 
@@ -66,12 +66,12 @@ const stages = [
 ];
 
 const supporterSpots = [
-  { x: "10%", y: "68px" },
-  { x: "20%", y: "18px" },
-  { x: "76%", y: "20px" },
-  { x: "86%", y: "82px" },
-  { x: "8%", y: "160px" },
-  { x: "82%", y: "160px" },
+  { x: "8%", y: "72px" },
+  { x: "16%", y: "190px" },
+  { x: "24%", y: "28px" },
+  { x: "74%", y: "28px" },
+  { x: "84%", y: "190px" },
+  { x: "90%", y: "78px" },
 ];
 
 const avatarColors = [
@@ -83,6 +83,33 @@ const avatarColors = [
   "#ff99c8",
   "#90dbf4",
   "#caffbf",
+];
+
+const defaultMessages: CheerMessage[] = [
+  {
+    id: 1,
+    nickname: "익명",
+    message: "졸업까지 끝까지 화이팅!",
+    color: "#ffd166",
+    x: "8%",
+    y: "72px",
+  },
+  {
+    id: 2,
+    nickname: "친구",
+    message: "조소은의 영화 꼭 보고 싶어",
+    color: "#90dbf4",
+    x: "24%",
+    y: "28px",
+  },
+  {
+    id: 3,
+    nickname: "촬영팀",
+    message: "끝까지 완주하자",
+    color: "#ff99c8",
+    x: "90%",
+    y: "78px",
+  },
 ];
 
 function getRandomColor() {
@@ -139,43 +166,39 @@ async function makePixelAvatar(file: File): Promise<string> {
 }
 
 export default function Page() {
-  const [amount, setAmount] = useState(0);
-  const [isCheering, setIsCheering] = useState(false);
-  const [showBanner, setShowBanner] = useState(false);
-  const [bubbleMessage, setBubbleMessage] = useState("");
-  const [copyMessage, setCopyMessage] = useState("");
+  const [amount, setAmount] = useState<number>(0);
+  const [isCheering, setIsCheering] = useState<boolean>(false);
+  const [showBanner, setShowBanner] = useState<boolean>(false);
+  const [bubbleMessage, setBubbleMessage] = useState<string>("");
+  const [copyMessage, setCopyMessage] = useState<string>("");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [drops, setDrops] = useState<MoneyDrop[]>([]);
 
-  const [nickname, setNickname] = useState("");
-  const [cheerText, setCheerText] = useState("");
+  const [nickname, setNickname] = useState<string>("");
+  const [cheerText, setCheerText] = useState<string>("");
 
-  const [messages, setMessages] = useState<CheerMessage[]>([
-    {
-      id: 1,
-      nickname: "익명",
-      message: "졸업까지 끝까지 화이팅!",
-      color: "#ffd166",
-      x: "10%",
-      y: "68px",
-    },
-    {
-      id: 2,
-      nickname: "친구",
-      message: "조소은의 영화 꼭 보고 싶어",
-      color: "#90dbf4",
-      x: "20%",
-      y: "18px",
-    },
-    {
-      id: 3,
-      nickname: "촬영팀",
-      message: "끝까지 완주하자",
-      color: "#ff99c8",
-      x: "86%",
-      y: "82px",
-    },
-  ]);
+  const [messages, setMessages] = useState<CheerMessage[]>(defaultMessages);
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem("josoeun-support-messages");
+    if (!saved) return;
+
+    try {
+      const parsed = JSON.parse(saved) as CheerMessage[];
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        setMessages(parsed);
+      }
+    } catch (error) {
+      console.error("메시지 불러오기 실패", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      "josoeun-support-messages",
+      JSON.stringify(messages)
+    );
+  }, [messages]);
 
   const currentStageIndex = useMemo(() => {
     if (amount >= 1600000) return 4;
@@ -186,11 +209,12 @@ export default function Page() {
   }, [amount]);
 
   const currentStage = stages[currentStageIndex];
-  const progress = Math.min((amount / GOAL) * 100, 100);
 
   const currentCharacterSrc = isCheering
     ? currentStage.cheer
     : currentStage.idle;
+
+  const progress = Math.min((amount / GOAL) * 100, 100);
 
   const triggerCelebration = () => {
     if (!isCheering) {
@@ -310,10 +334,7 @@ export default function Page() {
           </div>
 
           <div className="progress-bar">
-            <div
-              className="progress-fill"
-              style={{ width: `${progress}%` }}
-            />
+            <div className="progress-fill" style={{ width: `${progress}%` }} />
           </div>
 
           <div className="stage-text">현재 단계: {currentStage.name}</div>
@@ -378,13 +399,19 @@ export default function Page() {
             >
               {msg.avatar ? (
                 <div
-                  className="supporter-image-box"
+                  className="supporter-image-frame"
                   title={`${msg.nickname}: ${msg.message}`}
                 >
-                  <img
-                    src={msg.avatar}
-                    alt={msg.nickname}
-                    className="supporter-image-avatar"
+                  <div className="supporter-image-head">
+                    <img
+                      src={msg.avatar}
+                      alt={msg.nickname}
+                      className="supporter-image-avatar"
+                    />
+                  </div>
+                  <div
+                    className="supporter-image-body"
+                    style={{ background: msg.color }}
                   />
                 </div>
               ) : (

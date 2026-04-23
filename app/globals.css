@@ -312,13 +312,23 @@ textarea {
   background: #000;
 }
 
-.supporter-image-box {
-  width: 96px;
-  height: 96px;
+.supporter-image-frame {
+  position: relative;
+  width: 64px;
+  height: 82px;
+  image-rendering: pixelated;
+  filter: drop-shadow(4px 4px 0 rgba(0, 0, 0, 0.25));
+}
+
+.supporter-image-head {
+  position: absolute;
+  top: 0;
+  left: 8px;
+  width: 48px;
+  height: 48px;
   border: 4px solid #000;
   background: #fff;
   overflow: hidden;
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.25);
 }
 
 .supporter-image-avatar {
@@ -327,6 +337,16 @@ textarea {
   object-fit: cover;
   image-rendering: pixelated;
   display: block;
+}
+
+.supporter-image-body {
+  position: absolute;
+  left: 14px;
+  bottom: 0;
+  width: 36px;
+  height: 26px;
+  border: 4px solid #000;
+  background: #ffd166;
 }
 
 .supporter-chat {
@@ -636,8 +656,21 @@ textarea {
     font-size: 11px;
   }
 
-  .supporter-image-box {
-    width: 72px;
+  .supporter-image-frame {
+    width: 54px;
     height: 72px;
   }
+
+  .supporter-image-head {
+    width: 40px;
+    height: 40px;
+    left: 7px;
+  }
+
+  .supporter-image-body {
+    width: 30px;
+    height: 22px;
+    left: 12px;
+  }
 }
+
