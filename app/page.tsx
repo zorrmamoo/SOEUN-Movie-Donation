@@ -28,9 +28,10 @@ type MoneyDrop = {
 };
 
 const movieInfo = {
-  title: "가제: 조소은의 졸업영화",
+  title: "재(가제)",
   genre: "오컬트 드라마",
   runtime: "약 25분",
+  tagline: "버려진 존재는 끝내 사라지지 않는다.",
   logline:
     "고독사 현장을 마주하던 젊은 무당이 버려진 신당과 죽은 무당의 흔적을 통해, 자신 역시 같은 미래에 닿을지 모른다는 공포와 맞선다.",
   synopsis:
@@ -78,12 +79,12 @@ const stages = [
 ];
 
 const supporterSpots = [
-  { x: "8%", y: "72px" },
-  { x: "16%", y: "190px" },
-  { x: "24%", y: "28px" },
-  { x: "74%", y: "28px" },
-  { x: "84%", y: "190px" },
-  { x: "90%", y: "78px" },
+  { x: "6%", y: "88px" },
+  { x: "14%", y: "230px" },
+  { x: "24%", y: "36px" },
+  { x: "72%", y: "36px" },
+  { x: "82%", y: "230px" },
+  { x: "90%", y: "92px" },
 ];
 
 const avatarColors = [
@@ -103,8 +104,8 @@ const defaultMessages: CheerMessage[] = [
     nickname: "익명",
     message: "졸업까지 끝까지 화이팅!",
     color: "#ffd166",
-    x: "8%",
-    y: "72px",
+    x: "6%",
+    y: "88px",
   },
   {
     id: 2,
@@ -112,7 +113,7 @@ const defaultMessages: CheerMessage[] = [
     message: "조소은의 영화 꼭 보고 싶어",
     color: "#90dbf4",
     x: "24%",
-    y: "28px",
+    y: "36px",
   },
   {
     id: 3,
@@ -120,7 +121,7 @@ const defaultMessages: CheerMessage[] = [
     message: "끝까지 완주하자",
     color: "#ff99c8",
     x: "90%",
-    y: "78px",
+    y: "92px",
   },
 ];
 
@@ -191,6 +192,9 @@ export default function Page() {
   const [cheerText, setCheerText] = useState<string>("");
 
   const [messages, setMessages] = useState<CheerMessage[]>(defaultMessages);
+  const [nextSpotIndex, setNextSpotIndex] = useState<number>(
+    defaultMessages.length % supporterSpots.length
+  );
 
   useEffect(() => {
     const saved = window.localStorage.getItem("josoeun-support-messages");
@@ -200,6 +204,7 @@ export default function Page() {
       const parsed = JSON.parse(saved) as CheerMessage[];
       if (Array.isArray(parsed) && parsed.length > 0) {
         setMessages(parsed);
+        setNextSpotIndex(parsed.length % supporterSpots.length);
       }
     } catch (error) {
       console.error("메시지 불러오기 실패", error);
@@ -278,8 +283,7 @@ export default function Page() {
     if (!trimmedMessage) return;
 
     const displayName = trimmedNickname || "익명";
-    const currentIndex = messages.length % supporterSpots.length;
-    const spot = supporterSpots[currentIndex];
+    const spot = supporterSpots[nextSpotIndex];
 
     let avatarDataUrl: string | undefined = undefined;
 
@@ -302,6 +306,7 @@ export default function Page() {
     };
 
     setMessages((prev) => [...prev, newMessage].slice(-6));
+    setNextSpotIndex((prev) => (prev + 1) % supporterSpots.length);
     setBubbleMessage(`${displayName}: ${trimmedMessage}`);
     triggerCelebration();
 
@@ -336,19 +341,18 @@ export default function Page() {
     <main className="page-shell">
       <div className="page-wrap">
         <header className="title-area">
-          <div className="title-row">
-            <div>
-              <h1>조소은 졸업시키기</h1>
-              <p>후원은 계좌로, 응원은 메시지와 아바타로 남겨주세요</p>
-            </div>
+          <div className="title-inline">
+            <h1>조소은 졸업시키기</h1>
 
             <button
               className="movie-info-btn"
               onClick={() => setIsMovieModalOpen(true)}
             >
-              영화 소개 보기
+              🎬 영화 소개 보기
             </button>
           </div>
+
+          <p>후원은 계좌로, 응원은 메시지와 아바타로 남겨주세요</p>
         </header>
 
         <section className="money-panel">
@@ -583,37 +587,60 @@ export default function Page() {
           onClick={() => setIsMovieModalOpen(false)}
         >
           <div
-            className="movie-modal"
+            className="movie-poster-modal"
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              className="movie-modal-close"
-              onClick={() => setIsMovieModalOpen(false)}
-            >
-              닫기
-            </button>
+            <div className="movie-modal-header">
+              <button
+                className="movie-modal-close"
+                onClick={() => setIsMovieModalOpen(false)}
+              >
+                닫기
+              </button>
+            </div>
 
-            <div className="movie-modal-content">
-              <h2>{movieInfo.title}</h2>
+            <div className="movie-poster-body">
+              <div className="movie-poster-left">
+                <div className="movie-poster-frame">
+                  <div className="movie-poster-topline">
+                    GRADUATION FILM PROJECT
+                  </div>
 
-              <div className="movie-meta">
-                <span>{movieInfo.genre}</span>
-                <span>{movieInfo.runtime}</span>
+                  <div>
+                    <div className="movie-poster-title">{movieInfo.title}</div>
+                    <div className="movie-poster-tagline">
+                      {movieInfo.tagline}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="movie-poster-meta">
+                      <span>{movieInfo.genre}</span>
+                      <span>{movieInfo.runtime}</span>
+                    </div>
+
+                    <div className="movie-poster-credit">
+                      Directed by JO SOEUN
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="movie-section">
-                <h3>로그라인</h3>
-                <p>{movieInfo.logline}</p>
-              </div>
+              <div className="movie-poster-right">
+                <div className="movie-section">
+                  <h3>로그라인</h3>
+                  <p>{movieInfo.logline}</p>
+                </div>
 
-              <div className="movie-section">
-                <h3>시놉시스</h3>
-                <p>{movieInfo.synopsis}</p>
-              </div>
+                <div className="movie-section">
+                  <h3>시놉시스</h3>
+                  <p>{movieInfo.synopsis}</p>
+                </div>
 
-              <div className="movie-section">
-                <h3>연출의도</h3>
-                <p>{movieInfo.note}</p>
+                <div className="movie-section">
+                  <h3>연출의도</h3>
+                  <p>{movieInfo.note}</p>
+                </div>
               </div>
             </div>
           </div>

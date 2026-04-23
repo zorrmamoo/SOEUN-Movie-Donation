@@ -39,21 +39,21 @@ textarea {
   margin-bottom: 18px;
 }
 
-.title-row {
+.title-inline {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
 .title-area h1 {
-  margin: 0 0 10px;
+  margin: 0;
   font-size: 44px;
   font-weight: 900;
 }
 
 .title-area p {
-  margin: 0;
+  margin: 10px 0 0;
   font-size: 18px;
   line-height: 1.5;
 }
@@ -71,6 +71,7 @@ textarea {
   animation: movieBtnPulse 1.6s ease-in-out infinite;
   transform: translateY(0);
   transition: transform 0.15s ease, filter 0.15s ease;
+  margin-top: 6px;
 }
 
 .movie-info-btn:hover {
@@ -617,10 +618,11 @@ textarea {
   border: 3px solid #000;
 }
 
+/* 포스터 느낌 모달 */
 .movie-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.72);
+  background: rgba(0, 0, 0, 0.82);
   z-index: 100;
   display: flex;
   align-items: center;
@@ -628,61 +630,111 @@ textarea {
   padding: 24px;
 }
 
-.movie-modal {
-  width: min(760px, 100%);
-  max-height: 85vh;
+.movie-poster-modal {
+  width: min(980px, 100%);
+  max-height: 88vh;
   overflow-y: auto;
-  background: #1d1d1d;
+  background: linear-gradient(135deg, #121212 0%, #1e1e1e 100%);
   border: 4px solid #000;
-  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.35);
+  box-shadow: 12px 12px 0 rgba(0, 0, 0, 0.45);
+  display: grid;
+  grid-template-columns: 340px 1fr;
   position: relative;
 }
 
 .movie-modal-close {
-  position: sticky;
-  top: 0;
-  margin-left: auto;
-  display: block;
+  position: absolute;
+  top: 12px;
+  right: 12px;
   background: #f2e27c;
   color: #111;
-  z-index: 2;
+  z-index: 3;
 }
 
-.movie-modal-content {
-  padding: 20px;
+.movie-poster-left {
+  padding: 24px;
+  border-right: 4px solid #000;
+  background:
+    radial-gradient(circle at top, rgba(255, 126, 168, 0.18), transparent 40%),
+    linear-gradient(180deg, #1b1b1b 0%, #0f0f0f 100%);
 }
 
-.movie-modal-content h2 {
-  margin: 0 0 12px;
-  font-size: 32px;
-}
-
-.movie-meta {
+.movie-poster-frame {
+  min-height: 520px;
+  border: 4px solid #000;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 20%),
+    linear-gradient(180deg, #111 0%, #1d1d1d 100%);
+  padding: 24px 20px;
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 18px;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.03);
 }
 
-.movie-meta span {
+.movie-poster-topline {
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: #d2d2d2;
+}
+
+.movie-poster-title {
+  font-size: 52px;
+  font-weight: 900;
+  line-height: 1.05;
+  color: #fff17a;
+  text-shadow: 4px 4px 0 #000;
+  margin: 24px 0 10px;
+}
+
+.movie-poster-tagline {
+  font-size: 18px;
+  line-height: 1.5;
+  color: #f2f2f2;
+  margin-bottom: 24px;
+}
+
+.movie-poster-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.movie-poster-meta span {
   border: 3px solid #000;
-  background: #2a2a2a;
+  background: #ff7ea8;
+  color: #fff;
   padding: 8px 10px;
-  font-weight: 800;
+  font-weight: 900;
+}
+
+.movie-poster-credit {
+  margin-top: 20px;
+  font-size: 14px;
+  color: #cfcfcf;
+  border-top: 3px solid rgba(255, 255, 255, 0.12);
+  padding-top: 12px;
+}
+
+.movie-poster-right {
+  padding: 28px 24px 24px;
+  background: linear-gradient(180deg, #202020 0%, #171717 100%);
 }
 
 .movie-section {
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 
 .movie-section h3 {
   margin: 0 0 8px;
   font-size: 20px;
+  color: #fff17a;
 }
 
 .movie-section p {
   margin: 0;
-  line-height: 1.7;
+  line-height: 1.75;
   color: #f2f2f2;
 }
 
@@ -716,10 +768,8 @@ textarea {
 
 @media (max-width: 980px) {
   .title-inline {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .movie-info-btn {
@@ -798,7 +848,17 @@ textarea {
     left: 12px;
   }
 
-  .movie-modal-content h2 {
-    font-size: 26px;
+  .movie-poster-modal {
+    grid-template-columns: 1fr;
+  }
+
+  .movie-poster-left {
+    border-right: none;
+    border-bottom: 4px solid #000;
+  }
+
+  .movie-poster-title {
+    font-size: 40px;
   }
 }
+
