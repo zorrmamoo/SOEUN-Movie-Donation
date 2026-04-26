@@ -36,8 +36,7 @@ const movieInfo = {
     "고독사 현장을 마주하던 젊은 무당이 버려진 신당과 죽은 무당의 흔적을 통해, 자신 역시 같은 미래에 닿을지 모른다는 공포와 맞선다.",
   synopsis:
     "고독사 현장을 오가며 천도재를 돕는 젊은 무당 여진은 어느 날 은퇴한 무당이 홀로 죽은 공간과 마주한다. 방치된 신당, 끊어진 인간관계, 신에게도 사회에도 버려진 삶의 흔적은 여진에게 타인의 죽음이 아닌 자신의 미래처럼 다가온다. 죽은 무당의 그림자는 점점 여진의 삶을 잠식하고, 여진은 반복되는 고독과 버림의 구조를 끊기 위해 마지막 의식을 준비한다.",
-  note:
-    "이 영화는 고독사를 개인의 비극이 아니라 사회적 단절과 반복의 문제로 바라본다. 오컬트 장르의 형식을 통해 버려진 존재의 공포와, 그 공포가 다음 존재에게 어떻게 옮겨붙는지를 시각적으로 풀어내고자 한다.",
+  note: "이 영화는 고독사를 개인의 비극이 아니라 사회적 단절과 반복의 문제로 바라본다. 오컬트 장르의 형식을 통해 버려진 존재의 공포와, 그 공포가 다음 존재에게 어떻게 옮겨붙는지를 시각적으로 풀어내고자 한다.",
 };
 
 const stages = [
@@ -46,45 +45,31 @@ const stages = [
     idle: "/assets/characters/grade1_idle.png",
     cheer: "/assets/characters/grade1_happy.png",
     background: "/assets/backgrounds/grade1_bg.png",
-    min: 0,
   },
   {
     name: "2학년",
     idle: "/assets/characters/grade2_study.png",
     cheer: "/assets/characters/grade2_happy.png",
     background: "/assets/backgrounds/grade2_bg.png",
-    min: 400000,
   },
   {
     name: "3학년",
     idle: "/assets/characters/grade3_shoot.png",
     cheer: "/assets/characters/grade3_happy.png",
     background: "/assets/backgrounds/grade3_bg.png",
-    min: 800000,
   },
   {
     name: "4학년",
     idle: "/assets/characters/grade4_edit.png",
     cheer: "/assets/characters/grade4_happy.png",
     background: "/assets/backgrounds/grade4_bg.png",
-    min: 1200000,
   },
   {
     name: "5학년",
     idle: "/assets/characters/grade5_graduate.png",
     cheer: "/assets/characters/grade5_happy.png",
     background: "/assets/backgrounds/grade5_bg.png",
-    min: 1600000,
   },
-];
-
-const supporterSpots = [
-  { x: "6%", y: "88px" },
-  { x: "14%", y: "230px" },
-  { x: "24%", y: "36px" },
-  { x: "72%", y: "36px" },
-  { x: "82%", y: "230px" },
-  { x: "90%", y: "92px" },
 ];
 
 const avatarColors = [
@@ -129,6 +114,34 @@ function getRandomColor() {
   return avatarColors[Math.floor(Math.random() * avatarColors.length)];
 }
 
+function getRandomSupporterPosition(existingMessages: CheerMessage[]) {
+  const possiblePositions = [
+    { x: "5%", y: "90px" },
+    { x: "9%", y: "240px" },
+    { x: "17%", y: "120px" },
+    { x: "24%", y: "280px" },
+    { x: "34%", y: "64px" },
+    { x: "62%", y: "70px" },
+    { x: "72%", y: "250px" },
+    { x: "80%", y: "110px" },
+    { x: "88%", y: "270px" },
+    { x: "92%", y: "90px" },
+  ];
+
+  const usedPositions = existingMessages.map(
+    (message) => `${message.x}-${message.y}`
+  );
+
+  const availablePositions = possiblePositions.filter(
+    (position) => !usedPositions.includes(`${position.x}-${position.y}`)
+  );
+
+  const positionPool =
+    availablePositions.length > 0 ? availablePositions : possiblePositions;
+
+  return positionPool[Math.floor(Math.random() * positionPool.length)];
+}
+
 async function makePixelAvatar(file: File): Promise<string> {
   const imageUrl = URL.createObjectURL(file);
 
@@ -158,11 +171,9 @@ async function makePixelAvatar(file: File): Promise<string> {
       const sx = (img.width - size) / 2;
       const sy = (img.height - size) / 2;
 
-      smallCtx.clearRect(0, 0, 32, 32);
       smallCtx.drawImage(img, sx, sy, size, size, 0, 0, 32, 32);
 
       finalCtx.imageSmoothingEnabled = false;
-      finalCtx.clearRect(0, 0, 256, 256);
       finalCtx.drawImage(smallCanvas, 0, 0, 32, 32, 0, 0, 256, 256);
 
       URL.revokeObjectURL(imageUrl);
@@ -192,24 +203,38 @@ export default function Page() {
   const [cheerText, setCheerText] = useState<string>("");
 
   const [messages, setMessages] = useState<CheerMessage[]>(defaultMessages);
-  const [nextSpotIndex, setNextSpotIndex] = useState<number>(
-    defaultMessages.length % supporterSpots.length
-  );
 
   useEffect(() => {
-    const saved = window.localStorage.getItem("josoeun-support-messages");
-    if (!saved) return;
+    const savedAmount = window.localStorage.getItem("josoeun-support-amount");
 
-    try {
-      const parsed = JSON.parse(saved) as CheerMessage[];
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        setMessages(parsed);
-        setNextSpotIndex(parsed.length % supporterSpots.length);
+    if (savedAmount) {
+      const parsedAmount = Number(savedAmount);
+
+      if (!Number.isNaN(parsedAmount)) {
+        setAmount(parsedAmount);
       }
-    } catch (error) {
-      console.error("메시지 불러오기 실패", error);
+    }
+
+    const savedMessages = window.localStorage.getItem(
+      "josoeun-support-messages"
+    );
+
+    if (savedMessages) {
+      try {
+        const parsedMessages = JSON.parse(savedMessages) as CheerMessage[];
+
+        if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
+          setMessages(parsedMessages);
+        }
+      } catch (error) {
+        console.error("메시지 불러오기 실패", error);
+      }
     }
   }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem("josoeun-support-amount", String(amount));
+  }, [amount]);
 
   useEffect(() => {
     window.localStorage.setItem(
@@ -235,36 +260,39 @@ export default function Page() {
   const progress = Math.min((amount / GOAL) * 100, 100);
 
   const triggerCelebration = () => {
-    if (!isCheering) {
-      setIsCheering(true);
-      window.setTimeout(() => setIsCheering(false), 1800);
-    }
+    setIsCheering(true);
+    window.setTimeout(() => setIsCheering(false), 1800);
 
     setShowBanner(true);
     window.setTimeout(() => setShowBanner(false), 2200);
 
-    const newDrops: MoneyDrop[] = Array.from({ length: 14 }).map((_, index) => ({
-      id: Date.now() + index,
-      left: 5 + Math.random() * 85,
-      delay: Math.random() * 0.35,
-      size: 24 + Math.random() * 10,
-      rotate: -18 + Math.random() * 36,
-    }));
+    const newDrops: MoneyDrop[] = Array.from({ length: 14 }).map(
+      (_, index) => ({
+        id: Date.now() + index,
+        left: 5 + Math.random() * 85,
+        delay: Math.random() * 0.35,
+        size: 24 + Math.random() * 10,
+        rotate: -18 + Math.random() * 36,
+      })
+    );
 
     setDrops(newDrops);
     window.setTimeout(() => setDrops([]), 2200);
   };
 
   const handleDonate = async (value: number) => {
-    setAmount((prev: number) => Math.min(prev + value, GOAL));
+    setAmount((prev) => Math.min(prev + value, GOAL));
     triggerCelebration();
 
     try {
       await navigator.clipboard.writeText(
         `${BANK_NAME} ${ACCOUNT_NUMBER} ${ACCOUNT_HOLDER}`
       );
+
       setCopyMessage("계좌번호가 복사되었어요.");
-      setBubbleMessage(`${value.toLocaleString()}원 응원! 계좌번호가 복사되었어요.`);
+      setBubbleMessage(
+        `${value.toLocaleString()}원 응원! 계좌번호가 복사되었어요.`
+      );
     } catch {
       setCopyMessage("복사에 실패했어요.");
       setBubbleMessage("복사에 실패했어요.");
@@ -283,7 +311,7 @@ export default function Page() {
     if (!trimmedMessage) return;
 
     const displayName = trimmedNickname || "익명";
-    const spot = supporterSpots[nextSpotIndex];
+    const spot = getRandomSupporterPosition(messages);
 
     let avatarDataUrl: string | undefined = undefined;
 
@@ -305,8 +333,7 @@ export default function Page() {
       avatar: avatarDataUrl,
     };
 
-    setMessages((prev) => [...prev, newMessage].slice(-6));
-    setNextSpotIndex((prev) => (prev + 1) % supporterSpots.length);
+    setMessages((prev) => [...prev, newMessage].slice(-10));
     setBubbleMessage(`${displayName}: ${trimmedMessage}`);
     triggerCelebration();
 
@@ -324,6 +351,7 @@ export default function Page() {
       await navigator.clipboard.writeText(
         `${BANK_NAME} ${ACCOUNT_NUMBER} ${ACCOUNT_HOLDER}`
       );
+
       setCopyMessage("계좌번호가 복사되었어요.");
       setBubbleMessage("계좌번호가 복사되었어요!");
     } catch {
@@ -357,6 +385,7 @@ export default function Page() {
 
         <section className="money-panel">
           <div className="money-label">목표 금액</div>
+
           <div className="money-value">
             {amount.toLocaleString()}원 / {GOAL.toLocaleString()}원
           </div>
@@ -372,7 +401,9 @@ export default function Page() {
           {stages.map((stage, index) => (
             <div
               key={stage.name}
-              className={`stage-card ${currentStageIndex === index ? "active" : ""}`}
+              className={`stage-card ${
+                currentStageIndex === index ? "active" : ""
+              }`}
             >
               {stage.name}
             </div>
@@ -396,9 +427,7 @@ export default function Page() {
           )}
 
           {bubbleMessage && (
-            <div className="speech-bubble">
-              {bubbleMessage}
-            </div>
+            <div className="speech-bubble">{bubbleMessage}</div>
           )}
 
           {drops.map((drop) => (
@@ -426,10 +455,7 @@ export default function Page() {
               }}
             >
               {msg.avatar ? (
-                <div
-                  className="supporter-image-frame"
-                  title={`${msg.nickname}: ${msg.message}`}
-                >
+                <div className="supporter-image-frame">
                   <div className="supporter-image-head">
                     <img
                       src={msg.avatar}
@@ -437,6 +463,7 @@ export default function Page() {
                       className="supporter-image-avatar"
                     />
                   </div>
+
                   <div
                     className="supporter-image-body"
                     style={{ background: msg.color }}
@@ -446,7 +473,6 @@ export default function Page() {
                 <div
                   className="supporter-pixel"
                   style={{ background: msg.color }}
-                  title={`${msg.nickname}: ${msg.message}`}
                 >
                   <div className="supporter-face">
                     <span className="eye left" />
@@ -466,7 +492,11 @@ export default function Page() {
           <div className="character-shadow" />
 
           <div className="character-wrap">
-            <div className={isCheering ? "character-inner dance-bounce" : "character-inner"}>
+            <div
+              className={
+                isCheering ? "character-inner dance-bounce" : "character-inner"
+              }
+            >
               <Image
                 src={currentCharacterSrc}
                 alt="캐릭터"
@@ -477,7 +507,9 @@ export default function Page() {
             </div>
           </div>
 
-          <div className="tap-guide">응원 메시지를 남기면 캐릭터가 반응해요</div>
+          <div className="tap-guide">
+            응원 메시지를 남기면 캐릭터가 반응해요
+          </div>
         </section>
 
         <section className="info-grid">
