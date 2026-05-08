@@ -110,6 +110,8 @@ const defaultMessages: CheerMessage[] = [
   },
 ];
 
+const presetAmounts = [10000, 30000, 50000, 100000];
+
 function getRandomColor() {
   return avatarColors[Math.floor(Math.random() * avatarColors.length)];
 }
@@ -191,6 +193,10 @@ async function makePixelAvatar(file: File): Promise<string> {
 
 export default function Page() {
   const [amount, setAmount] = useState<number>(0);
+  const [amountInput, setAmountInput] = useState("");
+  const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<string>("Toss");
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isCheering, setIsCheering] = useState<boolean>(false);
   const [showBanner, setShowBanner] = useState<boolean>(false);
   const [bubbleMessage, setBubbleMessage] = useState<string>("");
@@ -201,9 +207,6 @@ export default function Page() {
   const [cheerText, setCheerText] = useState<string>("");
   const [messages, setMessages] = useState<CheerMessage[]>(defaultMessages);
   const [isMovieModalOpen, setIsMovieModalOpen] = useState<boolean>(false);
-  const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<string>("Toss");
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchDonationData = async () => {
@@ -285,9 +288,10 @@ export default function Page() {
     window.setTimeout(() => setDrops([]), 2200);
   };
 
-  const handleDonate = (value: number) => {
+  const handleAmountSelect = (value: number) => {
     setSelectedAmount(value);
     setBubbleMessage(`${value.toLocaleString()}원을 선택했어요.`);
+    setAmountInput(String(value));
   
     window.setTimeout(() => {
       setBubbleMessage("");
@@ -394,24 +398,19 @@ export default function Page() {
     }
   };
 
-  const handleCopyAccount = async () => {
-    try {
-      await navigator.clipboard.writeText(
-        `${BANK_NAME} ${ACCOUNT_NUMBER} ${ACCOUNT_HOLDER}`
-      );
-
-      setCopyMessage("계좌번호가 복사되었어요.");
-      setBubbleMessage("계좌번호가 복사되었어요!");
-    } catch {
-      setCopyMessage("복사에 실패했어요.");
-      setBubbleMessage("복사에 실패했어요.");
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+  
+    setAmountInput(value);
+  
+    const numericValue = Number(value);
+  
+    if (presetAmounts.includes(numericValue)) {
+      setSelectedAmount(numericValue);
+    } else {
+      setSelectedAmount(null);
     }
-
-    window.setTimeout(() => {
-      setCopyMessage("");
-      setBubbleMessage("");
-    }, 2200);
-  };
+  }
 
   return (
     <main className="page-shell">
@@ -608,14 +607,10 @@ export default function Page() {
             <p>{ACCOUNT_NUMBER}</p>
             <p>{ACCOUNT_HOLDER}</p>
 
-            <button className="secondary-btn" onClick={handleCopyAccount}>
-              계좌번호 복사
-            </button>
-
             {copyMessage && <div className="copy-message">{copyMessage}</div>}
 
             <select
-              className="message-input"
+              className="payment-select"
               value={paymentMethod}
               onChange={(e) => setPaymentMethod(e.target.value)}
             >
@@ -625,18 +620,26 @@ export default function Page() {
             </select>
 
             <div className="donate-grid">
-              {[10000, 30000, 50000, 100000].map((value) => (
+              {presetAmounts.map((value) => (
                 <button
                   key={value}
                   className={`donate-btn ${
                     selectedAmount === value ? "selected" : ""
                   }`}
-                  onClick={() => handleDonate(value)}
+                  onClick={() => handleAmountSelect(value)}
                 >
                   {value.toLocaleString()}원
                 </button>
               ))}
             </div>
+
+            <input
+              type="number"
+              value={amountInput}
+              className="custom-amount-input"
+              onChange={handleAmountChange}
+              placeholder="직접 금액 입력"
+            />
           </div>
         </section>
 
