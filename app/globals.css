@@ -505,6 +505,9 @@ textarea {
 }
 
 .custom-amount-input:focus,
+.message-input:focus,
+.message-textarea:focus,
+.message-file-input:focus,
 .payment-select:focus {
   outline: none;
 }

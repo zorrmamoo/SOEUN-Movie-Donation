@@ -193,8 +193,7 @@ async function makePixelAvatar(file: File): Promise<string> {
 
 export default function Page() {
   const [amount, setAmount] = useState<number>(0);
-  const [amountInput, setAmountInput] = useState("");
-  const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
+  const [amountInput, setAmountInput] = useState<number | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<string>("Toss");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isCheering, setIsCheering] = useState<boolean>(false);
@@ -289,9 +288,8 @@ export default function Page() {
   };
 
   const handleAmountSelect = (value: number) => {
-    setSelectedAmount(value);
+    setAmountInput(value);
     setBubbleMessage(`${value.toLocaleString()}원을 선택했어요.`);
-    setAmountInput(String(value));
   
     window.setTimeout(() => {
       setBubbleMessage("");
@@ -299,7 +297,7 @@ export default function Page() {
   };
 
   const handleAddMessage = async () => {
-    if (!selectedAmount) {
+    if (!amountInput) {
       setBubbleMessage("후원 금액을 먼저 선택해주세요.");
       window.setTimeout(() => setBubbleMessage(""), 2200);
       return;
@@ -324,7 +322,7 @@ export default function Page() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          amount: selectedAmount,
+          amount: amountInput,
           nickname: displayName,
           message: trimmedMessage || null,
           paymentMethod,
@@ -362,7 +360,7 @@ export default function Page() {
         nickname: displayName,
         message:
           trimmedMessage ||
-          `${selectedAmount.toLocaleString()}원 후원했어요!`,
+          `${amountInput.toLocaleString()}원 후원했어요!`,
         color: getRandomColor(),
         x: spot.x,
         y: spot.y,
@@ -374,7 +372,7 @@ export default function Page() {
       triggerCelebration();
   
       setBubbleMessage(
-        `${displayName}님, ${selectedAmount.toLocaleString()}원 후원 감사합니다!`
+        `${displayName}님, ${amountInput.toLocaleString()}원 후원 감사합니다!`
       );
   
       window.setTimeout(() => {
@@ -385,7 +383,7 @@ export default function Page() {
       setNickname("");
       setCheerText("");
       setUploadedFile(null);
-      setSelectedAmount(null);
+      setAmountInput(null);
     } catch (error) {
       console.error(error);
       setBubbleMessage("후원 처리 중 문제가 발생했어요.");
@@ -401,15 +399,7 @@ export default function Page() {
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
   
-    setAmountInput(value);
-  
-    const numericValue = Number(value);
-  
-    if (presetAmounts.includes(numericValue)) {
-      setSelectedAmount(numericValue);
-    } else {
-      setSelectedAmount(null);
-    }
+    setAmountInput(Number(value));
   }
 
   return (
@@ -624,7 +614,7 @@ export default function Page() {
                 <button
                   key={value}
                   className={`donate-btn ${
-                    selectedAmount === value ? "selected" : ""
+                    amountInput === value ? "selected" : ""
                   }`}
                   onClick={() => handleAmountSelect(value)}
                 >
@@ -635,7 +625,7 @@ export default function Page() {
 
             <input
               type="number"
-              value={amountInput}
+              value={String(amountInput ?? "")}
               className="custom-amount-input"
               onChange={handleAmountChange}
               placeholder="직접 금액 입력"
