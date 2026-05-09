@@ -607,7 +607,7 @@ export default function Page() {
             <input
               className="message-file-input"
               type="file"
-              accept="image/*"
+              accept="image/png,image/jpeg,image/webp"
               onChange={(e) => {
                 const file = e.target.files?.[0] ?? null;
                 setUploadedFile(file);

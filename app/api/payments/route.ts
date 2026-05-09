@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 
-const ALLOWED_AMOUNTS = [10000, 30000, 50000, 100000];
 const ALLOWED_PAYMENT_METHODS = ["bank-transfer", "toss", "kakaopay"];
 const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
 const MAX_AVATAR_SIZE = 2 * 1024 * 1024;
@@ -16,7 +15,7 @@ export async function POST(req: Request) {
     const paymentMethod = String(formData.get("paymentMethod") ?? "");
     const avatarFile = formData.get("avatar");
 
-    if (!ALLOWED_AMOUNTS.includes(amount)) {
+    if (!Number.isFinite(amount) || amount <= 0) {
       return NextResponse.json(
         { error: "Invalid donation amount" },
         { status: 400 }
