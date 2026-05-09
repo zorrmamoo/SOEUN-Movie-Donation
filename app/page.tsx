@@ -25,6 +25,7 @@ type DonationMessageResponse = {
   id: string;
   nickname: string;
   message: string | null;
+  avatar: string | null;
 };
 
 type MoneyDrop = {
@@ -133,6 +134,7 @@ function createCheerMessageFromDonation(
     color: getRandomColor(),
     x: spot.x,
     y: spot.y,
+    avatar: donation.avatar || undefined,
   };
 }
 
@@ -343,19 +345,32 @@ export default function Page() {
     const displayName = trimmedNickname || "익명";
   
     setIsSubmitting(true);
+
+    let avatarDataUrl: string | undefined = undefined;
+  
+    if (uploadedFile) {
+      try {
+        avatarDataUrl = await makePixelAvatar(uploadedFile);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    const formData = new FormData();
+    formData.append("amount", String(amountInput));
+    formData.append("nickname", displayName);
+    formData.append("message", trimmedMessage || "");
+    formData.append("paymentMethod", paymentMethod);
+
+    if (avatarDataUrl) {
+      const avatarBlob = await fetch(avatarDataUrl).then((res) => res.blob());
+      formData.append("avatar", avatarBlob, `${crypto.randomUUID()}.png`);
+    }
   
     try {
       const res = await fetch("/api/payments", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          amount: amountInput,
-          nickname: displayName,
-          message: trimmedMessage || null,
-          paymentMethod,
-        }),
+        body: formData,
       });
   
       const result = await res.json();
@@ -373,16 +388,7 @@ export default function Page() {
       }
   
       const spot = getRandomSupporterPosition(messages);
-  
-      let avatarDataUrl: string | undefined = undefined;
-  
-      if (uploadedFile) {
-        try {
-          avatarDataUrl = await makePixelAvatar(uploadedFile);
-        } catch (error) {
-          console.error(error);
-        }
-      }
+
   
       const newMessage: CheerMessage = {
         id: crypto.randomUUID(),

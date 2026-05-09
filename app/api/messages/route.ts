@@ -4,7 +4,7 @@ import { supabaseServer } from "@/lib/supabaseServer";
 export async function GET() {
   const { data, error } = await supabaseServer
     .from("donations")
-    .select("id, nickname, message, created_at")
+    .select("id, nickname, message, avatar_url, created_at")
     .eq("status", "approved")
     .not("message", "is", null)
     .order("created_at", { ascending: false })
@@ -19,6 +19,7 @@ export async function GET() {
       id: donation.id,
       nickname: donation.nickname || "익명",
       message: donation.message,
+      avatar: donation.avatar_url,
     }))
   );
 }
