@@ -35,13 +35,17 @@ export async function POST(req: Request) {
 
     const orderId = crypto.randomUUID();
     const paymentKey = `simulated_${orderId}`;
+    const status = paymentMethod === "bank-transfer" ? "pending" : "approved";
 
     const { error } = await supabaseServer.from("donations").insert({
       order_id: orderId,
       payment_key: paymentKey,
       amount,
       message: message?.trim() || null,
-      approved_at: new Date().toISOString(),
+      nickname: nickname?.trim() || "익명",
+      payment_method: paymentMethod,
+      status,
+      approved_at: status === "approved" ? new Date().toISOString() : null,
     });
 
     if (error) {

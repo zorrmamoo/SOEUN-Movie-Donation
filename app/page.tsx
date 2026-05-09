@@ -225,9 +225,7 @@ export default function Page() {
   
     fetchDonationData();
   
-    const savedMessages = window.localStorage.getItem(
-      "josoeun-support-messages"
-    );
+    const savedMessages = window.localStorage.getItem("josoeun-support-messages");
   
     if (savedMessages) {
       try {
@@ -559,6 +557,7 @@ export default function Page() {
               placeholder="닉네임 또는 이름"
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
+              required
             />
 
             <textarea
