@@ -197,32 +197,40 @@ export default function Page() {
   const [copyMessage, setCopyMessage] = useState<string>("");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [drops, setDrops] = useState<MoneyDrop[]>([]);
-  const [isMovieModalOpen, setIsMovieModalOpen] = useState<boolean>(false);
-
   const [nickname, setNickname] = useState<string>("");
   const [cheerText, setCheerText] = useState<string>("");
-
   const [messages, setMessages] = useState<CheerMessage[]>(defaultMessages);
+  const [isMovieModalOpen, setIsMovieModalOpen] = useState<boolean>(false);
+  const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<string>("Toss");
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   useEffect(() => {
-    const savedAmount = window.localStorage.getItem("josoeun-support-amount");
-
-    if (savedAmount) {
-      const parsedAmount = Number(savedAmount);
-
-      if (!Number.isNaN(parsedAmount)) {
-        setAmount(parsedAmount);
+    const fetchDonationData = async () => {
+      try {
+        const res = await fetch("/api/donations");
+  
+        if (!res.ok) {
+          throw new Error("후원 금액 불러오기 실패");
+        }
+  
+        const data = await res.json();
+        setAmount(data.totalAmount ?? 0);
+      } catch (error) {
+        console.error(error);
       }
-    }
-
+    };
+  
+    fetchDonationData();
+  
     const savedMessages = window.localStorage.getItem(
       "josoeun-support-messages"
     );
-
+  
     if (savedMessages) {
       try {
         const parsedMessages = JSON.parse(savedMessages) as CheerMessage[];
-
+  
         if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
           setMessages(parsedMessages);
         }
@@ -232,10 +240,7 @@ export default function Page() {
     }
   }, []);
 
-  useEffect(() => {
-    window.localStorage.setItem("josoeun-support-amount", String(amount));
-  }, [amount]);
-
+  // ? Temporarily store messages in localStorage (change according to requirements later)
   useEffect(() => {
     window.localStorage.setItem(
       "josoeun-support-messages",
@@ -280,70 +285,113 @@ export default function Page() {
     window.setTimeout(() => setDrops([]), 2200);
   };
 
-  const handleDonate = async (value: number) => {
-    setAmount((prev) => Math.min(prev + value, GOAL));
-    triggerCelebration();
-
-    try {
-      await navigator.clipboard.writeText(
-        `${BANK_NAME} ${ACCOUNT_NUMBER} ${ACCOUNT_HOLDER}`
-      );
-
-      setCopyMessage("계좌번호가 복사되었어요.");
-      setBubbleMessage(
-        `${value.toLocaleString()}원 응원! 계좌번호가 복사되었어요.`
-      );
-    } catch {
-      setCopyMessage("복사에 실패했어요.");
-      setBubbleMessage("복사에 실패했어요.");
-    }
-
+  const handleDonate = (value: number) => {
+    setSelectedAmount(value);
+    setBubbleMessage(`${value.toLocaleString()}원을 선택했어요.`);
+  
     window.setTimeout(() => {
-      setCopyMessage("");
       setBubbleMessage("");
-    }, 2200);
+    }, 1800);
   };
 
   const handleAddMessage = async () => {
+    if (!selectedAmount) {
+      setBubbleMessage("후원 금액을 먼저 선택해주세요.");
+      window.setTimeout(() => setBubbleMessage(""), 2200);
+      return;
+    }
+  
+    if (!paymentMethod) {
+      setBubbleMessage("결제수단을 선택해주세요.");
+      window.setTimeout(() => setBubbleMessage(""), 2200);
+      return;
+    }
+  
     const trimmedNickname = nickname.trim();
     const trimmedMessage = cheerText.trim();
-
-    if (!trimmedMessage) return;
-
     const displayName = trimmedNickname || "익명";
-    const spot = getRandomSupporterPosition(messages);
-
-    let avatarDataUrl: string | undefined = undefined;
-
-    if (uploadedFile) {
-      try {
-        avatarDataUrl = await makePixelAvatar(uploadedFile);
-      } catch (error) {
-        console.error(error);
+  
+    setIsSubmitting(true);
+  
+    try {
+      const res = await fetch("/api/payments", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          amount: selectedAmount,
+          nickname: displayName,
+          message: trimmedMessage || null,
+          paymentMethod,
+        }),
+      });
+  
+      const result = await res.json();
+  
+      if (!res.ok) {
+        throw new Error(result.error ?? "후원 처리 실패");
       }
+  
+      // Refetch synced total from DB
+      const totalRes = await fetch("/api/donations");
+      const totalData = await totalRes.json();
+  
+      if (totalRes.ok) {
+        setAmount(totalData.totalAmount ?? 0);
+      }
+  
+      const spot = getRandomSupporterPosition(messages);
+  
+      let avatarDataUrl: string | undefined = undefined;
+  
+      if (uploadedFile) {
+        try {
+          avatarDataUrl = await makePixelAvatar(uploadedFile);
+        } catch (error) {
+          console.error(error);
+        }
+      }
+  
+      const newMessage: CheerMessage = {
+        id: Date.now(),
+        nickname: displayName,
+        message:
+          trimmedMessage ||
+          `${selectedAmount.toLocaleString()}원 후원했어요!`,
+        color: getRandomColor(),
+        x: spot.x,
+        y: spot.y,
+        avatar: avatarDataUrl,
+      };
+  
+      setMessages((prev) => [...prev, newMessage].slice(-10));
+  
+      triggerCelebration();
+  
+      setBubbleMessage(
+        `${displayName}님, ${selectedAmount.toLocaleString()}원 후원 감사합니다!`
+      );
+  
+      window.setTimeout(() => {
+        setBubbleMessage("");
+        setCopyMessage("");
+      }, 3000);
+  
+      setNickname("");
+      setCheerText("");
+      setUploadedFile(null);
+      setSelectedAmount(null);
+    } catch (error) {
+      console.error(error);
+      setBubbleMessage("후원 처리 중 문제가 발생했어요.");
+  
+      window.setTimeout(() => {
+        setBubbleMessage("");
+      }, 2500);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    const newMessage: CheerMessage = {
-      id: Date.now(),
-      nickname: displayName,
-      message: trimmedMessage,
-      color: getRandomColor(),
-      x: spot.x,
-      y: spot.y,
-      avatar: avatarDataUrl,
-    };
-
-    setMessages((prev) => [...prev, newMessage].slice(-10));
-    setBubbleMessage(`${displayName}: ${trimmedMessage}`);
-    triggerCelebration();
-
-    window.setTimeout(() => {
-      setBubbleMessage("");
-    }, 3000);
-
-    setNickname("");
-    setCheerText("");
-    setUploadedFile(null);
   };
 
   const handleCopyAccount = async () => {
@@ -513,31 +561,6 @@ export default function Page() {
         </section>
 
         <section className="info-grid">
-          <div className="account-card">
-            <h3>후원 계좌</h3>
-            <p>{BANK_NAME}</p>
-            <p>{ACCOUNT_NUMBER}</p>
-            <p>{ACCOUNT_HOLDER}</p>
-
-            <button className="secondary-btn" onClick={handleCopyAccount}>
-              계좌번호 복사
-            </button>
-
-            {copyMessage && <div className="copy-message">{copyMessage}</div>}
-
-            <div className="donate-grid">
-              {[10000, 30000, 50000, 100000].map((value) => (
-                <button
-                  key={value}
-                  className="donate-btn"
-                  onClick={() => handleDonate(value)}
-                >
-                  {value.toLocaleString()}원
-                </button>
-              ))}
-            </div>
-          </div>
-
           <div className="message-card">
             <h3>응원 메시지 남기기</h3>
 
@@ -566,12 +589,53 @@ export default function Page() {
               }}
             />
 
-            <button className="submit-btn" onClick={handleAddMessage}>
-              등록하기
+            <button
+              className="submit-btn"
+              onClick={handleAddMessage}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "처리 중..." : "후원하기"}
             </button>
 
             <div className="message-help">
               이미지를 올리면 픽셀화된 응원 아바타가 화면에 계속 남아요
+            </div>
+          </div>
+
+          <div className="account-card">
+            <h3>후원 금액 선택</h3>
+            <p>{BANK_NAME}</p>
+            <p>{ACCOUNT_NUMBER}</p>
+            <p>{ACCOUNT_HOLDER}</p>
+
+            <button className="secondary-btn" onClick={handleCopyAccount}>
+              계좌번호 복사
+            </button>
+
+            {copyMessage && <div className="copy-message">{copyMessage}</div>}
+
+            <select
+              className="message-input"
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+            >
+              <option value="bank-transfer">계좌이체</option>
+              <option value="toss">Toss</option>
+              <option value="kakaopay">KakaoPay</option>
+            </select>
+
+            <div className="donate-grid">
+              {[10000, 30000, 50000, 100000].map((value) => (
+                <button
+                  key={value}
+                  className={`donate-btn ${
+                    selectedAmount === value ? "selected" : ""
+                  }`}
+                  onClick={() => handleDonate(value)}
+                >
+                  {value.toLocaleString()}원
+                </button>
+              ))}
             </div>
           </div>
         </section>
