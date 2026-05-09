@@ -9,6 +9,8 @@ const BANK_NAME = "토스뱅크";
 const ACCOUNT_NUMBER = "1002-1311-4187";
 const ACCOUNT_HOLDER = "조소은";
 
+type PaymentMethod = "bank-transfer" | "toss" | "kakaopay";
+
 type CheerMessage = {
   id: string | number;
   nickname: string;
@@ -216,7 +218,7 @@ async function makePixelAvatar(file: File): Promise<string> {
 export default function Page() {
   const [amount, setAmount] = useState<number>(0);
   const [amountInput, setAmountInput] = useState<number | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<string>("Toss");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("toss");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isCheering, setIsCheering] = useState<boolean>(false);
   const [showBanner, setShowBanner] = useState<boolean>(false);
@@ -276,8 +278,6 @@ export default function Page() {
     
     fetchMessages();
   }, []);
-
-  // ? Temporarily store messages in localStorage (change according to requirements later)
 
   const currentStageIndex = useMemo(() => {
     if (amount >= 1600000) return 4;
@@ -428,8 +428,8 @@ export default function Page() {
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
   
-    setAmountInput(Number(value));
-  }
+    setAmountInput(value === "" ? null : Number(value));
+  };
 
   return (
     <main className="page-shell">
@@ -632,7 +632,7 @@ export default function Page() {
             <select
               className="payment-select"
               value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value)}
+              onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
             >
               <option value="bank-transfer">계좌이체</option>
               <option value="toss">Toss</option>
