@@ -9,14 +9,23 @@ const BANK_NAME = "토스뱅크";
 const ACCOUNT_NUMBER = "1002-1311-4187";
 const ACCOUNT_HOLDER = "조소은";
 
+type PaymentMethod = "bank-transfer" | "toss" | "kakaopay";
+
 type CheerMessage = {
-  id: number;
+  id: string | number;
   nickname: string;
   message: string;
   color: string;
   x: string;
   y: string;
   avatar?: string;
+};
+
+type DonationMessageResponse = {
+  id: string;
+  nickname: string;
+  message: string | null;
+  avatar: string | null;
 };
 
 type MoneyDrop = {
@@ -110,6 +119,25 @@ const defaultMessages: CheerMessage[] = [
   },
 ];
 
+const presetAmounts = [10000, 30000, 50000, 100000];
+
+function createCheerMessageFromDonation(
+  donation: DonationMessageResponse,
+  existingMessages: CheerMessage[]
+): CheerMessage {
+  const spot = getRandomSupporterPosition(existingMessages);
+
+  return {
+    id: donation.id,
+    nickname: donation.nickname || "익명",
+    message: donation.message || "",
+    color: getRandomColor(),
+    x: spot.x,
+    y: spot.y,
+    avatar: donation.avatar || undefined,
+  };
+}
+
 function getRandomColor() {
   return avatarColors[Math.floor(Math.random() * avatarColors.length)];
 }
@@ -191,6 +219,9 @@ async function makePixelAvatar(file: File): Promise<string> {
 
 export default function Page() {
   const [amount, setAmount] = useState<number>(0);
+  const [amountInput, setAmountInput] = useState<number | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("toss");
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isCheering, setIsCheering] = useState<boolean>(false);
   const [showBanner, setShowBanner] = useState<boolean>(false);
   const [bubbleMessage, setBubbleMessage] = useState<string>("");
@@ -201,9 +232,6 @@ export default function Page() {
   const [cheerText, setCheerText] = useState<string>("");
   const [messages, setMessages] = useState<CheerMessage[]>(defaultMessages);
   const [isMovieModalOpen, setIsMovieModalOpen] = useState<boolean>(false);
-  const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<string>("Toss");
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchDonationData = async () => {
@@ -222,31 +250,36 @@ export default function Page() {
     };
   
     fetchDonationData();
-  
-    const savedMessages = window.localStorage.getItem(
-      "josoeun-support-messages"
-    );
-  
-    if (savedMessages) {
+
+    const fetchMessages = async () => {
       try {
-        const parsedMessages = JSON.parse(savedMessages) as CheerMessage[];
-  
-        if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
-          setMessages(parsedMessages);
+        const res = await fetch("/api/messages");
+    
+        if (!res.ok) {
+          throw new Error("응원 메시지 불러오기 실패");
+        }
+    
+        const data = (await res.json()) as DonationMessageResponse[];
+    
+        const dbMessages = data.reduce<CheerMessage[]>((messages, donation) => {
+          if (!donation.message) return messages;
+    
+          return [
+            ...messages,
+            createCheerMessageFromDonation(donation, messages),
+          ];
+        }, []);
+    
+        if (dbMessages.length > 0) {
+          setMessages(dbMessages);
         }
       } catch (error) {
-        console.error("메시지 불러오기 실패", error);
+        console.error(error);
       }
-    }
+    };
+    
+    fetchMessages();
   }, []);
-
-  // ? Temporarily store messages in localStorage (change according to requirements later)
-  useEffect(() => {
-    window.localStorage.setItem(
-      "josoeun-support-messages",
-      JSON.stringify(messages)
-    );
-  }, [messages]);
 
   const currentStageIndex = useMemo(() => {
     if (amount >= 1600000) return 4;
@@ -285,8 +318,8 @@ export default function Page() {
     window.setTimeout(() => setDrops([]), 2200);
   };
 
-  const handleDonate = (value: number) => {
-    setSelectedAmount(value);
+  const handleAmountSelect = (value: number) => {
+    setAmountInput(value);
     setBubbleMessage(`${value.toLocaleString()}원을 선택했어요.`);
   
     window.setTimeout(() => {
@@ -295,7 +328,7 @@ export default function Page() {
   };
 
   const handleAddMessage = async () => {
-    if (!selectedAmount) {
+    if (!amountInput) {
       setBubbleMessage("후원 금액을 먼저 선택해주세요.");
       window.setTimeout(() => setBubbleMessage(""), 2200);
       return;
@@ -312,19 +345,32 @@ export default function Page() {
     const displayName = trimmedNickname || "익명";
   
     setIsSubmitting(true);
+
+    let avatarDataUrl: string | undefined = undefined;
+  
+    if (uploadedFile) {
+      try {
+        avatarDataUrl = await makePixelAvatar(uploadedFile);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    const formData = new FormData();
+    formData.append("amount", String(amountInput));
+    formData.append("nickname", displayName);
+    formData.append("message", trimmedMessage || "");
+    formData.append("paymentMethod", paymentMethod);
+
+    if (avatarDataUrl) {
+      const avatarBlob = await fetch(avatarDataUrl).then((res) => res.blob());
+      formData.append("avatar", avatarBlob, `${crypto.randomUUID()}.png`);
+    }
   
     try {
       const res = await fetch("/api/payments", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          amount: selectedAmount,
-          nickname: displayName,
-          message: trimmedMessage || null,
-          paymentMethod,
-        }),
+        body: formData,
       });
   
       const result = await res.json();
@@ -342,23 +388,14 @@ export default function Page() {
       }
   
       const spot = getRandomSupporterPosition(messages);
-  
-      let avatarDataUrl: string | undefined = undefined;
-  
-      if (uploadedFile) {
-        try {
-          avatarDataUrl = await makePixelAvatar(uploadedFile);
-        } catch (error) {
-          console.error(error);
-        }
-      }
+
   
       const newMessage: CheerMessage = {
-        id: Date.now(),
+        id: crypto.randomUUID(),
         nickname: displayName,
         message:
           trimmedMessage ||
-          `${selectedAmount.toLocaleString()}원 후원했어요!`,
+          `${amountInput.toLocaleString()}원 후원했어요!`,
         color: getRandomColor(),
         x: spot.x,
         y: spot.y,
@@ -370,7 +407,7 @@ export default function Page() {
       triggerCelebration();
   
       setBubbleMessage(
-        `${displayName}님, ${selectedAmount.toLocaleString()}원 후원 감사합니다!`
+        `${displayName}님, ${amountInput.toLocaleString()}원 후원 감사합니다!`
       );
   
       window.setTimeout(() => {
@@ -381,7 +418,7 @@ export default function Page() {
       setNickname("");
       setCheerText("");
       setUploadedFile(null);
-      setSelectedAmount(null);
+      setAmountInput(null);
     } catch (error) {
       console.error(error);
       setBubbleMessage("후원 처리 중 문제가 발생했어요.");
@@ -394,23 +431,10 @@ export default function Page() {
     }
   };
 
-  const handleCopyAccount = async () => {
-    try {
-      await navigator.clipboard.writeText(
-        `${BANK_NAME} ${ACCOUNT_NUMBER} ${ACCOUNT_HOLDER}`
-      );
-
-      setCopyMessage("계좌번호가 복사되었어요.");
-      setBubbleMessage("계좌번호가 복사되었어요!");
-    } catch {
-      setCopyMessage("복사에 실패했어요.");
-      setBubbleMessage("복사에 실패했어요.");
-    }
-
-    window.setTimeout(() => {
-      setCopyMessage("");
-      setBubbleMessage("");
-    }, 2200);
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+  
+    setAmountInput(value === "" ? null : Number(value));
   };
 
   return (
@@ -570,6 +594,7 @@ export default function Page() {
               placeholder="닉네임 또는 이름"
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
+              required
             />
 
             <textarea
@@ -582,7 +607,7 @@ export default function Page() {
             <input
               className="message-file-input"
               type="file"
-              accept="image/*"
+              accept="image/png,image/jpeg,image/webp"
               onChange={(e) => {
                 const file = e.target.files?.[0] ?? null;
                 setUploadedFile(file);
@@ -608,16 +633,12 @@ export default function Page() {
             <p>{ACCOUNT_NUMBER}</p>
             <p>{ACCOUNT_HOLDER}</p>
 
-            <button className="secondary-btn" onClick={handleCopyAccount}>
-              계좌번호 복사
-            </button>
-
             {copyMessage && <div className="copy-message">{copyMessage}</div>}
 
             <select
-              className="message-input"
+              className="payment-select"
               value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value)}
+              onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
             >
               <option value="bank-transfer">계좌이체</option>
               <option value="toss">Toss</option>
@@ -625,18 +646,26 @@ export default function Page() {
             </select>
 
             <div className="donate-grid">
-              {[10000, 30000, 50000, 100000].map((value) => (
+              {presetAmounts.map((value) => (
                 <button
                   key={value}
                   className={`donate-btn ${
-                    selectedAmount === value ? "selected" : ""
+                    amountInput === value ? "selected" : ""
                   }`}
-                  onClick={() => handleDonate(value)}
+                  onClick={() => handleAmountSelect(value)}
                 >
                   {value.toLocaleString()}원
                 </button>
               ))}
             </div>
+
+            <input
+              type="number"
+              value={String(amountInput ?? "")}
+              className="custom-amount-input"
+              onChange={handleAmountChange}
+              placeholder="직접 금액 입력"
+            />
           </div>
         </section>
 
