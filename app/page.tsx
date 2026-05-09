@@ -10,13 +10,19 @@ const ACCOUNT_NUMBER = "1002-1311-4187";
 const ACCOUNT_HOLDER = "조소은";
 
 type CheerMessage = {
-  id: number;
+  id: string | number;
   nickname: string;
   message: string;
   color: string;
   x: string;
   y: string;
   avatar?: string;
+};
+
+type DonationMessageResponse = {
+  id: string;
+  nickname: string;
+  message: string | null;
 };
 
 type MoneyDrop = {
@@ -111,6 +117,22 @@ const defaultMessages: CheerMessage[] = [
 ];
 
 const presetAmounts = [10000, 30000, 50000, 100000];
+
+function createCheerMessageFromDonation(
+  donation: DonationMessageResponse,
+  existingMessages: CheerMessage[]
+): CheerMessage {
+  const spot = getRandomSupporterPosition(existingMessages);
+
+  return {
+    id: donation.id,
+    nickname: donation.nickname || "익명",
+    message: donation.message || "",
+    color: getRandomColor(),
+    x: spot.x,
+    y: spot.y,
+  };
+}
 
 function getRandomColor() {
   return avatarColors[Math.floor(Math.random() * avatarColors.length)];
@@ -224,29 +246,38 @@ export default function Page() {
     };
   
     fetchDonationData();
-  
-    const savedMessages = window.localStorage.getItem("josoeun-support-messages");
-  
-    if (savedMessages) {
+
+    const fetchMessages = async () => {
       try {
-        const parsedMessages = JSON.parse(savedMessages) as CheerMessage[];
-  
-        if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
-          setMessages(parsedMessages);
+        const res = await fetch("/api/messages");
+    
+        if (!res.ok) {
+          throw new Error("응원 메시지 불러오기 실패");
+        }
+    
+        const data = (await res.json()) as DonationMessageResponse[];
+    
+        const dbMessages = data.reduce<CheerMessage[]>((messages, donation) => {
+          if (!donation.message) return messages;
+    
+          return [
+            ...messages,
+            createCheerMessageFromDonation(donation, messages),
+          ];
+        }, []);
+    
+        if (dbMessages.length > 0) {
+          setMessages(dbMessages);
         }
       } catch (error) {
-        console.error("메시지 불러오기 실패", error);
+        console.error(error);
       }
-    }
+    };
+    
+    fetchMessages();
   }, []);
 
   // ? Temporarily store messages in localStorage (change according to requirements later)
-  useEffect(() => {
-    window.localStorage.setItem(
-      "josoeun-support-messages",
-      JSON.stringify(messages)
-    );
-  }, [messages]);
 
   const currentStageIndex = useMemo(() => {
     if (amount >= 1600000) return 4;
@@ -354,7 +385,7 @@ export default function Page() {
       }
   
       const newMessage: CheerMessage = {
-        id: Date.now(),
+        id: crypto.randomUUID(),
         nickname: displayName,
         message:
           trimmedMessage ||
