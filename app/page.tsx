@@ -220,7 +220,7 @@ async function makePixelAvatar(file: File): Promise<string> {
 export default function Page() {
   const [amount, setAmount] = useState<number>(0);
   const [amountInput, setAmountInput] = useState<number | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("toss");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("bank-transfer");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isCheering, setIsCheering] = useState<boolean>(false);
   const [showBanner, setShowBanner] = useState<boolean>(false);
@@ -641,8 +641,6 @@ export default function Page() {
               onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
             >
               <option value="bank-transfer">계좌이체</option>
-              <option value="toss">Toss</option>
-              <option value="kakaopay">KakaoPay</option>
             </select>
 
             <div className="donate-grid">
