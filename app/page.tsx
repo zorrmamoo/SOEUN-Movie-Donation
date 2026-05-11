@@ -92,33 +92,6 @@ const avatarColors = [
   "#caffbf",
 ];
 
-const defaultMessages: CheerMessage[] = [
-  {
-    id: 1,
-    nickname: "익명",
-    message: "졸업까지 끝까지 화이팅!",
-    color: "#ffd166",
-    x: "6%",
-    y: "88px",
-  },
-  {
-    id: 2,
-    nickname: "친구",
-    message: "조소은의 영화 꼭 보고 싶어",
-    color: "#90dbf4",
-    x: "24%",
-    y: "36px",
-  },
-  {
-    id: 3,
-    nickname: "촬영팀",
-    message: "끝까지 완주하자",
-    color: "#ff99c8",
-    x: "90%",
-    y: "92px",
-  },
-];
-
 const presetAmounts = [10000, 30000, 50000, 100000];
 
 function createCheerMessageFromDonation(
@@ -230,7 +203,7 @@ export default function Page() {
   const [drops, setDrops] = useState<MoneyDrop[]>([]);
   const [nickname, setNickname] = useState<string>("");
   const [cheerText, setCheerText] = useState<string>("");
-  const [messages, setMessages] = useState<CheerMessage[]>(defaultMessages);
+  const [messages, setMessages] = useState<CheerMessage[]>([]);
   const [isMovieModalOpen, setIsMovieModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
