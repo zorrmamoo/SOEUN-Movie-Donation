@@ -312,7 +312,9 @@ export default function Page() {
       window.setTimeout(() => setBubbleMessage(""), 2200);
       return;
     }
-  
+    
+    triggerCelebration();
+
     const trimmedNickname = nickname.trim();
     const trimmedMessage = cheerText.trim();
     const displayName = trimmedNickname || "익명";
@@ -377,7 +379,6 @@ export default function Page() {
   
       setMessages((prev) => [...prev, newMessage].slice(-10));
   
-      triggerCelebration();
   
       setBubbleMessage(
         `${displayName}님, ${amountInput.toLocaleString()}원 후원 감사합니다!`

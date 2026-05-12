@@ -70,7 +70,7 @@ export async function POST(req: Request) {
     }
 
     const orderId = crypto.randomUUID();
-    const paymentKey = `simulated_${orderId}`;
+    const paymentKey = `${orderId}`;
     const status =
       paymentMethod === "bank-transfer" ? "pending" : "approved";
 
