@@ -205,6 +205,8 @@ export default function Page() {
   const [cheerText, setCheerText] = useState<string>("");
   const [messages, setMessages] = useState<CheerMessage[]>([]);
   const [isMovieModalOpen, setIsMovieModalOpen] = useState<boolean>(false);
+  const [isPosterModalOpen, setIsPosterModalOpen] = useState(false);
+  const [isPosterViewerOpen, setIsPosterViewerOpen] = useState(false);
 
   useEffect(() => {
     const fetchDonationData = async () => {
@@ -419,10 +421,17 @@ export default function Page() {
             <h1>조소은 졸업시키기</h1>
 
             <button
-              className="movie-info-btn"
+              className="modal-btn"
               onClick={() => setIsMovieModalOpen(true)}
             >
               🎬 영화 소개 보기
+            </button>
+
+            <button
+              className="modal-btn"
+              onClick={() => setIsPosterModalOpen(true)}
+            >
+              🎞️ 영화 포스터 보기
             </button>
           </div>
 
@@ -697,49 +706,106 @@ export default function Page() {
             </div>
 
             <div className="movie-poster-body">
-              <div className="movie-poster-left">
-                <div className="movie-poster-frame">
-                  <div className="movie-poster-topline">
+              <div className="movie-info-left">
+                <div className="movie-info-frame">
+                  <div className="movie-info-topline">
                     GRADUATION FILM PROJECT
                   </div>
 
                   <div>
-                    <div className="movie-poster-title">{movieInfo.title}</div>
-                    <div className="movie-poster-tagline">
+                    <div className="movie-info-title">{movieInfo.title}</div>
+                    <div className="movie-info-tagline">
                       {movieInfo.tagline}
                     </div>
                   </div>
 
                   <div>
-                    <div className="movie-poster-meta">
+                    <div className="movie-info-meta">
                       <span>{movieInfo.genre}</span>
                       <span>{movieInfo.runtime}</span>
                     </div>
 
-                    <div className="movie-poster-credit">
+                    <div className="movie-info-credit">
                       Directed by JO SOEUN
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="movie-poster-right">
-                <div className="movie-section">
+              <div className="movie-info-right">
+                <div className="movie-info-section">
                   <h3>로그라인</h3>
                   <p>{movieInfo.logline}</p>
                 </div>
 
-                <div className="movie-section">
+                <div className="movie-info-section">
                   <h3>시놉시스</h3>
                   <p>{movieInfo.synopsis}</p>
                 </div>
 
-                <div className="movie-section">
+                <div className="movie-info-section">
                   <h3>연출의도</h3>
                   <p>{movieInfo.note}</p>
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {isPosterModalOpen && (
+        <div
+          className="movie-modal-overlay"
+          onClick={() => {
+            setIsPosterModalOpen(false);
+          }}
+        >
+          <div
+            className="movie-poster-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+           <div className="movie-modal-header">
+              <button
+                className="movie-modal-close"
+                onClick={() => setIsPosterModalOpen(false)}
+              >
+                닫기
+              </button>
+            </div>
+
+            <Image
+              src="/assets/poster.png"
+              alt="영화 포스터"
+              width={420}
+              height={600}
+              className="poster-image"
+              onClick={() => setIsPosterViewerOpen(true)}
+            />
+          </div>
+        </div>
+      )}
+
+      {isPosterViewerOpen && (
+        <div
+          className="poster-viewer-overlay"
+          onClick={() => setIsPosterViewerOpen(false)}
+        >
+          <button
+            className="poster-viewer-close"
+            onClick={() => setIsPosterViewerOpen(false)}
+          >
+            닫기
+          </button>
+
+          <div
+            className="poster-viewer-scroll"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src="/assets/poster.png"
+              alt="영화 포스터 확대 보기"
+              className="poster-viewer-image"
+            />
           </div>
         </div>
       )}
