@@ -18,6 +18,7 @@ type CheerMessage = {
   color: string;
   x: string;
   y: string;
+  side?: "left" | "right";
   avatar?: string;
 };
 
@@ -34,6 +35,12 @@ type MoneyDrop = {
   delay: number;
   size: number;
   rotate: number;
+};
+
+type Spot = {
+  x: string;
+  y: string;
+  side: "left" | "right";
 };
 
 const movieInfo = {
@@ -96,7 +103,7 @@ const presetAmounts = [10000, 30000, 50000, 100000];
 
 function createCheerMessageFromDonation(
   donation: DonationMessageResponse,
-  existingMessages: CheerMessage[]
+  existingMessages: CheerMessage[],
 ): CheerMessage {
   const spot = getRandomSupporterPosition(existingMessages);
 
@@ -107,6 +114,7 @@ function createCheerMessageFromDonation(
     color: getRandomColor(),
     x: spot.x,
     y: spot.y,
+    side: spot.side,
     avatar: donation.avatar || undefined,
   };
 }
@@ -115,32 +123,50 @@ function getRandomColor() {
   return avatarColors[Math.floor(Math.random() * avatarColors.length)];
 }
 
-function getRandomSupporterPosition(existingMessages: CheerMessage[]) {
-  const possiblePositions = [
-    { x: "5%", y: "90px" },
-    { x: "9%", y: "240px" },
-    { x: "17%", y: "120px" },
-    { x: "24%", y: "280px" },
-    { x: "34%", y: "64px" },
-    { x: "62%", y: "70px" },
-    { x: "72%", y: "250px" },
-    { x: "80%", y: "110px" },
-    { x: "88%", y: "270px" },
-    { x: "92%", y: "90px" },
-  ];
+function getRandomSupporterPosition(existingMessages: CheerMessage[]): Spot {
+  const MAX_ATTEMPTS = 9999999;
+  const MIN_DISTANCE = 18;
 
-  const usedPositions = existingMessages.map(
-    (message) => `${message.x}-${message.y}`
-  );
+  const randomBetween = (min: number, max: number) =>
+    min + Math.random() * (max - min);
 
-  const availablePositions = possiblePositions.filter(
-    (position) => !usedPositions.includes(`${position.x}-${position.y}`)
-  );
+  const distance = (a: { x: number; y: number }, b: { x: number; y: number }) =>
+    Math.hypot(a.x - b.x, a.y - b.y);
 
-  const positionPool =
-    availablePositions.length > 0 ? availablePositions : possiblePositions;
+  const existingPoints = existingMessages.map((message) => ({
+    x: Number.parseFloat(message.x),
+    y: Number.parseFloat(message.y),
+  }));
 
-  return positionPool[Math.floor(Math.random() * positionPool.length)];
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
+    const side: "left" | "right" = Math.random() < 0.5 ? "left" : "right";
+
+    const candidate = {
+      x: side === "left" ? randomBetween(4, 34) : randomBetween(66, 96),
+      y: randomBetween(8, 72),
+      side,
+    };
+
+    const isFarEnough = existingPoints.every(
+      (point) => distance(candidate, point) >= MIN_DISTANCE,
+    );
+
+    if (isFarEnough) {
+      return {
+        x: `${candidate.x}%`,
+        y: `${candidate.y}%`,
+        side: candidate.side,
+      };
+    }
+  }
+
+  const fallbackSide = Math.random() < 0.5 ? "left" : "right";
+
+  return {
+    x: `${fallbackSide === "left" ? randomBetween(4, 34) : randomBetween(66, 96)}%`,
+    y: `${randomBetween(8, 72)}%`,
+    side: fallbackSide,
+  };
 }
 
 async function makePixelAvatar(file: File): Promise<string> {
@@ -193,7 +219,8 @@ async function makePixelAvatar(file: File): Promise<string> {
 export default function Page() {
   const [amount, setAmount] = useState<number>(0);
   const [amountInput, setAmountInput] = useState<number | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("bank-transfer");
+  const [paymentMethod, setPaymentMethod] =
+    useState<PaymentMethod>("bank-transfer");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isCheering, setIsCheering] = useState<boolean>(false);
   const [showBanner, setShowBanner] = useState<boolean>(false);
@@ -212,39 +239,39 @@ export default function Page() {
     const fetchDonationData = async () => {
       try {
         const res = await fetch("/api/donations");
-  
+
         if (!res.ok) {
           throw new Error("후원 금액 불러오기 실패");
         }
-  
+
         const data = await res.json();
         setAmount(data.totalAmount ?? 0);
       } catch (error) {
         console.error(error);
       }
     };
-  
+
     fetchDonationData();
 
     const fetchMessages = async () => {
       try {
         const res = await fetch("/api/messages");
-    
+
         if (!res.ok) {
           throw new Error("응원 메시지 불러오기 실패");
         }
-    
+
         const data = (await res.json()) as DonationMessageResponse[];
-    
+
         const dbMessages = data.reduce<CheerMessage[]>((messages, donation) => {
           if (!donation.message) return messages;
-    
+
           return [
             ...messages,
             createCheerMessageFromDonation(donation, messages),
           ];
         }, []);
-    
+
         if (dbMessages.length > 0) {
           setMessages(dbMessages);
         }
@@ -252,7 +279,7 @@ export default function Page() {
         console.error(error);
       }
     };
-    
+
     fetchMessages();
   }, []);
 
@@ -286,7 +313,7 @@ export default function Page() {
         delay: Math.random() * 0.35,
         size: 24 + Math.random() * 10,
         rotate: -18 + Math.random() * 36,
-      })
+      }),
     );
 
     setDrops(newDrops);
@@ -296,7 +323,7 @@ export default function Page() {
   const handleAmountSelect = (value: number) => {
     setAmountInput(value);
     setBubbleMessage(`${value.toLocaleString()}원을 선택했어요.`);
-  
+
     window.setTimeout(() => {
       setBubbleMessage("");
     }, 1800);
@@ -308,23 +335,23 @@ export default function Page() {
       window.setTimeout(() => setBubbleMessage(""), 2200);
       return;
     }
-  
+
     if (!paymentMethod) {
       setBubbleMessage("결제수단을 선택해주세요.");
       window.setTimeout(() => setBubbleMessage(""), 2200);
       return;
     }
-    
+
     triggerCelebration();
 
     const trimmedNickname = nickname.trim();
     const trimmedMessage = cheerText.trim();
     const displayName = trimmedNickname || "익명";
-  
+
     setIsSubmitting(true);
 
     let avatarDataUrl: string | undefined = undefined;
-  
+
     if (uploadedFile) {
       try {
         avatarDataUrl = await makePixelAvatar(uploadedFile);
@@ -343,54 +370,52 @@ export default function Page() {
       const avatarBlob = await fetch(avatarDataUrl).then((res) => res.blob());
       formData.append("avatar", avatarBlob, `${crypto.randomUUID()}.png`);
     }
-  
+
     try {
       const res = await fetch("/api/payments", {
         method: "POST",
         body: formData,
       });
-  
+
       const result = await res.json();
-  
+
       if (!res.ok) {
         throw new Error(result.error ?? "후원 처리 실패");
       }
-  
+
       // Refetch synced total from DB
       const totalRes = await fetch("/api/donations");
       const totalData = await totalRes.json();
-  
+
       if (totalRes.ok) {
         setAmount(totalData.totalAmount ?? 0);
       }
-  
+
       const spot = getRandomSupporterPosition(messages);
 
-  
       const newMessage: CheerMessage = {
         id: crypto.randomUUID(),
         nickname: displayName,
         message:
-          trimmedMessage ||
-          `${amountInput.toLocaleString()}원 후원했어요!`,
+          trimmedMessage || `${amountInput.toLocaleString()}원 후원했어요!`,
         color: getRandomColor(),
         x: spot.x,
         y: spot.y,
+        side: spot.side,
         avatar: avatarDataUrl,
       };
-  
+
       setMessages((prev) => [...prev, newMessage].slice(-10));
-  
-  
+
       setBubbleMessage(
-        `${displayName}님, ${amountInput.toLocaleString()}원 후원 감사합니다!`
+        `${displayName}님, ${amountInput.toLocaleString()}원 후원 감사합니다!`,
       );
-  
+
       window.setTimeout(() => {
         setBubbleMessage("");
         setCopyMessage("");
       }, 3000);
-  
+
       setNickname("");
       setCheerText("");
       setUploadedFile(null);
@@ -398,7 +423,7 @@ export default function Page() {
     } catch (error) {
       console.error(error);
       setBubbleMessage("후원 처리 중 문제가 발생했어요.");
-  
+
       window.setTimeout(() => {
         setBubbleMessage("");
       }, 2500);
@@ -409,7 +434,7 @@ export default function Page() {
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-  
+
     setAmountInput(value === "" ? null : Number(value));
   };
 
@@ -503,10 +528,10 @@ export default function Page() {
           {messages.map((msg) => (
             <div
               key={msg.id}
-              className="supporter-wrap"
+              className={`supporter-wrap ${msg.side === "right" ? "from-right" : ""}`}
               style={{
                 left: msg.x,
-                bottom: msg.y,
+                top: msg.y,
               }}
             >
               {msg.avatar ? (
@@ -518,11 +543,6 @@ export default function Page() {
                       className="supporter-image-avatar"
                     />
                   </div>
-
-                  <div
-                    className="supporter-image-body"
-                    style={{ background: msg.color }}
-                  />
                 </div>
               ) : (
                 <div
@@ -621,7 +641,9 @@ export default function Page() {
             <select
               className="payment-select"
               value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+              onChange={(e) =>
+                setPaymentMethod(e.target.value as PaymentMethod)
+              }
             >
               <option value="bank-transfer">계좌이체</option>
             </select>
@@ -764,7 +786,7 @@ export default function Page() {
             className="movie-poster-modal"
             onClick={(e) => e.stopPropagation()}
           >
-           <div className="movie-modal-header">
+            <div className="movie-modal-header">
               <button
                 className="movie-modal-close"
                 onClick={() => setIsPosterModalOpen(false)}
