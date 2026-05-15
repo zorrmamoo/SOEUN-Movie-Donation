@@ -40,7 +40,7 @@ type MoneyDrop = {
 type Spot = {
   x: string;
   y: string;
-  side: "left" | "right" | undefined;
+  side: "left" | "right";
 };
 
 const movieInfo = {
@@ -123,32 +123,50 @@ function getRandomColor() {
   return avatarColors[Math.floor(Math.random() * avatarColors.length)];
 }
 
-function getRandomSupporterPosition(existingMessages: CheerMessage[]) {
-  const possiblePositions: Spot[] = [
-    { x: "6%", y: "40px", side: "left" },
-    { x: "10%", y: "140px", side: "left" },
-    { x: "14%", y: "240px", side: "left" },
-    { x: "18%", y: "340px", side: "left" },
-    { x: "22%", y: "440px", side: "left" },
-    { x: "70%", y: "60px", side: "right" },
-    { x: "75%", y: "160px", side: "right" },
-    { x: "80%", y: "260px", side: "right" },
-    { x: "85%", y: "360px", side: "right" },
-    { x: "90%", y: "460px", side: "right" },
-  ];
+function getRandomSupporterPosition(existingMessages: CheerMessage[]): Spot {
+  const MAX_ATTEMPTS = 9999999;
+  const MIN_DISTANCE = 18;
 
-  const usedPositions = existingMessages.map(
-    (message) => `${message.x}-${message.y}`,
-  );
+  const randomBetween = (min: number, max: number) =>
+    min + Math.random() * (max - min);
 
-  const availablePositions = possiblePositions.filter(
-    (position) => !usedPositions.includes(`${position.x}-${position.y}`),
-  );
+  const distance = (a: { x: number; y: number }, b: { x: number; y: number }) =>
+    Math.hypot(a.x - b.x, a.y - b.y);
 
-  const positionPool =
-    availablePositions.length > 0 ? availablePositions : possiblePositions;
+  const existingPoints = existingMessages.map((message) => ({
+    x: Number.parseFloat(message.x),
+    y: Number.parseFloat(message.y),
+  }));
 
-  return positionPool[Math.floor(Math.random() * positionPool.length)];
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
+    const side: "left" | "right" = Math.random() < 0.5 ? "left" : "right";
+
+    const candidate = {
+      x: side === "left" ? randomBetween(4, 34) : randomBetween(66, 96),
+      y: randomBetween(8, 72),
+      side,
+    };
+
+    const isFarEnough = existingPoints.every(
+      (point) => distance(candidate, point) >= MIN_DISTANCE,
+    );
+
+    if (isFarEnough) {
+      return {
+        x: `${candidate.x}%`,
+        y: `${candidate.y}%`,
+        side: candidate.side,
+      };
+    }
+  }
+
+  const fallbackSide = Math.random() < 0.5 ? "left" : "right";
+
+  return {
+    x: `${fallbackSide === "left" ? randomBetween(4, 34) : randomBetween(66, 96)}%`,
+    y: `${randomBetween(8, 72)}%`,
+    side: fallbackSide,
+  };
 }
 
 async function makePixelAvatar(file: File): Promise<string> {
@@ -513,7 +531,7 @@ export default function Page() {
               className={`supporter-wrap ${msg.side === "right" ? "from-right" : ""}`}
               style={{
                 left: msg.x,
-                bottom: msg.y,
+                top: msg.y,
               }}
             >
               {msg.avatar ? (
