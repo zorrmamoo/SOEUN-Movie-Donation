@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabaseServer";
+import AdjustmentForm from "@/components/AdjustmentForm";
 
 export const dynamic = "force-dynamic";
 
@@ -140,6 +141,28 @@ async function rejectDonation(formData: FormData) {
   revalidatePath("/admin");
 }
 
+async function createAdjustment(formData: FormData) {
+  "use server";
+
+  if (!(await getIsLoggedIn())) redirect("/admin");
+
+  const adjustmentType = String(formData.get("adjustmentType") ?? "add");
+  const rawAmount = Number(formData.get("amount"));
+  const reason = String(formData.get("reason") ?? "").trim();
+
+  if (!Number.isFinite(rawAmount) || rawAmount <= 0) return;
+
+  const finalAmount = adjustmentType === "subtract" ? -rawAmount : rawAmount;
+
+  await supabaseServer.from("donation_adjustments").insert({
+    amount: finalAmount,
+    reason: reason || null,
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/");
+}
+
 export default async function AdminPage({
   searchParams,
 }: {
@@ -157,9 +180,7 @@ export default async function AdminPage({
         <section className="admin-login-panel">
           <div className="admin-kicker">관리자 페이지</div>
           <h1>후원 승인 로그인</h1>
-          <p>
-            계좌이체 후원을 확인하려면 관리자 비밀번호를 입력해주세요.
-          </p>
+          <p>계좌이체 후원을 확인하려면 관리자 비밀번호를 입력해주세요.</p>
 
           <form action={loginAdmin} className="admin-login-form">
             <label htmlFor="admin-password">비밀번호</label>
@@ -194,7 +215,7 @@ export default async function AdminPage({
   const { donations, error } = await getPendingDonations();
   const pendingTotal = donations.reduce(
     (sum, donation) => sum + donation.amount,
-    0
+    0,
   );
 
   return (
@@ -217,6 +238,8 @@ export default async function AdminPage({
           </form>
         </header>
 
+        <AdjustmentForm action={createAdjustment} />
+
         <section className="admin-summary-grid" aria-label="후원 승인 요약">
           <div className="admin-summary-box">
             <span>대기 건수</span>
@@ -233,8 +256,8 @@ export default async function AdminPage({
           <section className="admin-empty-state">
             <h2>대기 후원을 불러오지 못했어요</h2>
             <p>
-              donations 테이블에 status 컬럼이 아직 없거나 Supabase 환경
-              변수가 연결되지 않았을 수 있어요.
+              donations 테이블에 status 컬럼이 아직 없거나 Supabase 환경 변수가
+              연결되지 않았을 수 있어요.
             </p>
             <pre>{error}</pre>
           </section>
@@ -275,9 +298,7 @@ export default async function AdminPage({
                   </dl>
 
                   {donation.message && (
-                    <p className="admin-donation-message">
-                      {donation.message}
-                    </p>
+                    <p className="admin-donation-message">{donation.message}</p>
                   )}
                 </div>
 
