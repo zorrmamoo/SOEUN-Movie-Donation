@@ -16,6 +16,7 @@ type CheerMessage = {
   nickname: string;
   message: string;
   color: string;
+  slotId: string;
   x: string;
   y: string;
   side?: "left" | "right";
@@ -38,6 +39,7 @@ type MoneyDrop = {
 };
 
 type Spot = {
+  slotId: string;
   x: string;
   y: string;
   side: "left" | "right";
@@ -99,74 +101,83 @@ const avatarColors = [
   "#caffbf",
 ];
 
+const positionsByScreenSize: Record<"sm" | "md" | "lg", Spot[]> = {
+  sm: [
+    { slotId: "top-left", x: "6%", y: "8%", side: "left" },
+    { slotId: "upper-right", x: "94%", y: "30%", side: "right" },
+    { slotId: "lower-left", x: "6%", y: "52%", side: "left" },
+    { slotId: "bottom-right", x: "94%", y: "74%", side: "right" },
+  ],
+
+  md: [
+    { slotId: "top-left", x: "6%", y: "8%", side: "left" },
+    { slotId: "top-right", x: "94%", y: "8%", side: "right" },
+    { slotId: "mid-left", x: "6%", y: "42%", side: "left" },
+    { slotId: "mid-right", x: "94%", y: "42%", side: "right" },
+    { slotId: "bottom-left", x: "6%", y: "74%", side: "left" },
+    { slotId: "bottom-right", x: "94%", y: "74%", side: "right" },
+  ],
+
+  lg: [
+    { slotId: "top-left", x: "6%", y: "8%", side: "left" },
+    { slotId: "top-mid", x: "38%", y: "8%", side: "left" },
+    { slotId: "top-right", x: "94%", y: "8%", side: "right" },
+    { slotId: "upper-left", x: "6%", y: "32%", side: "left" },
+    { slotId: "upper-right", x: "94%", y: "32%", side: "right" },
+    { slotId: "lower-left", x: "6%", y: "56%", side: "left" },
+    { slotId: "lower-right", x: "94%", y: "56%", side: "right" },
+    { slotId: "bottom-left", x: "6%", y: "78%", side: "left" },
+    { slotId: "bottom-mid", x: "38%", y: "78%", side: "left" },
+    { slotId: "bottom-right", x: "94%", y: "78%", side: "right" },
+  ],
+};
+
 const presetAmounts = [10000, 30000, 50000, 100000];
 
 function createCheerMessageFromDonation(
   donation: DonationMessageResponse,
   existingMessages: CheerMessage[],
+  screenSize: "sm" | "md" | "lg",
 ): CheerMessage {
-  const spot = getRandomSupporterPosition(existingMessages);
+  const spot = getRandomSupporterPosition(existingMessages, screenSize);
 
   return {
     id: donation.id,
     nickname: donation.nickname || "익명",
     message: donation.message || "",
     color: getRandomColor(),
-    x: spot.x,
-    y: spot.y,
+    slotId: spot.slotId,
+    x: jitter(spot.x),
+    y: jitter(spot.y),
     side: spot.side,
     avatar: donation.avatar || undefined,
   };
+}
+
+function jitter(initialPosition: string) {
+  return `${parseFloat(initialPosition) + Math.floor(Math.random() * 6) - 2}%`;
 }
 
 function getRandomColor() {
   return avatarColors[Math.floor(Math.random() * avatarColors.length)];
 }
 
-function getRandomSupporterPosition(existingMessages: CheerMessage[]): Spot {
-  const MAX_ATTEMPTS = 9999999;
-  const MIN_DISTANCE = 18;
+function getRandomSupporterPosition(
+  existingMessages: CheerMessage[],
+  screenSize: "sm" | "md" | "lg",
+): Spot {
+  const possiblePositions = positionsByScreenSize[screenSize];
 
-  const randomBetween = (min: number, max: number) =>
-    min + Math.random() * (max - min);
+  const usedSlots = new Set(existingMessages.map((message) => message.slotId));
 
-  const distance = (a: { x: number; y: number }, b: { x: number; y: number }) =>
-    Math.hypot(a.x - b.x, a.y - b.y);
+  const availablePositions = possiblePositions.filter(
+    (position) => !usedSlots.has(position.slotId),
+  );
 
-  const existingPoints = existingMessages.map((message) => ({
-    x: Number.parseFloat(message.x),
-    y: Number.parseFloat(message.y),
-  }));
+  const positionPool =
+    availablePositions.length > 0 ? availablePositions : possiblePositions;
 
-  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
-    const side: "left" | "right" = Math.random() < 0.5 ? "left" : "right";
-
-    const candidate = {
-      x: side === "left" ? randomBetween(4, 34) : randomBetween(66, 96),
-      y: randomBetween(8, 72),
-      side,
-    };
-
-    const isFarEnough = existingPoints.every(
-      (point) => distance(candidate, point) >= MIN_DISTANCE,
-    );
-
-    if (isFarEnough) {
-      return {
-        x: `${candidate.x}%`,
-        y: `${candidate.y}%`,
-        side: candidate.side,
-      };
-    }
-  }
-
-  const fallbackSide = Math.random() < 0.5 ? "left" : "right";
-
-  return {
-    x: `${fallbackSide === "left" ? randomBetween(4, 34) : randomBetween(66, 96)}%`,
-    y: `${randomBetween(8, 72)}%`,
-    side: fallbackSide,
-  };
+  return positionPool[Math.floor(Math.random() * positionPool.length)];
 }
 
 async function makePixelAvatar(file: File): Promise<string> {
@@ -234,8 +245,27 @@ export default function Page() {
   const [isMovieModalOpen, setIsMovieModalOpen] = useState<boolean>(false);
   const [isPosterModalOpen, setIsPosterModalOpen] = useState(false);
   const [isPosterViewerOpen, setIsPosterViewerOpen] = useState(false);
+  const [screenSize, setScreenSize] = useState<"sm" | "md" | "lg">("lg");
 
   useEffect(() => {
+    const checkScreen = () => {
+      setScreenSize(
+        window.innerWidth < 576 ? "sm" : window.innerWidth < 980 ? "md" : "lg",
+      );
+    };
+
+    checkScreen();
+    window.addEventListener("resize", checkScreen);
+
+    console.log("initial mobile view");
+
+    return () => window.removeEventListener("resize", checkScreen);
+  }, []);
+
+  useEffect(() => {
+    const maxFloatingMessages =
+      screenSize === "sm" ? 4 : screenSize === "md" ? 6 : 10;
+
     const fetchDonationData = async () => {
       try {
         const res = await fetch("/api/donations");
@@ -263,14 +293,19 @@ export default function Page() {
 
         const data = (await res.json()) as DonationMessageResponse[];
 
-        const dbMessages = data.reduce<CheerMessage[]>((messages, donation) => {
-          if (!donation.message) return messages;
+        const visibleDonations = data
+          .filter((donation) => donation.message)
+          .slice(-maxFloatingMessages);
 
-          return [
-            ...messages,
-            createCheerMessageFromDonation(donation, messages),
-          ];
-        }, []);
+        const dbMessages = visibleDonations.reduce<CheerMessage[]>(
+          (messages, donation) => {
+            return [
+              ...messages,
+              createCheerMessageFromDonation(donation, messages, screenSize),
+            ];
+          },
+          [],
+        );
 
         if (dbMessages.length > 0) {
           setMessages(dbMessages);
@@ -281,7 +316,7 @@ export default function Page() {
     };
 
     fetchMessages();
-  }, []);
+  }, [screenSize]);
 
   const currentStageIndex = useMemo(() => {
     if (amount >= 1600000) return 4;
@@ -391,7 +426,7 @@ export default function Page() {
         setAmount(totalData.totalAmount ?? 0);
       }
 
-      const spot = getRandomSupporterPosition(messages);
+      const spot = getRandomSupporterPosition(messages, screenSize);
 
       const newMessage: CheerMessage = {
         id: crypto.randomUUID(),
@@ -399,13 +434,14 @@ export default function Page() {
         message:
           trimmedMessage || `${amountInput.toLocaleString()}원 후원했어요!`,
         color: getRandomColor(),
+        slotId: spot.slotId,
         x: spot.x,
         y: spot.y,
         side: spot.side,
         avatar: avatarDataUrl,
       };
 
-      setMessages((prev) => [...prev, newMessage].slice(-10));
+      setMessages((prev) => [...prev, newMessage]);
 
       setBubbleMessage(
         `${displayName}님, ${amountInput.toLocaleString()}원 후원 감사합니다!`,
@@ -437,6 +473,8 @@ export default function Page() {
 
     setAmountInput(value === "" ? null : Number(value));
   };
+
+  const floatingMessages = messages;
 
   return (
     <main className="page-shell">
@@ -525,7 +563,7 @@ export default function Page() {
             </div>
           ))}
 
-          {messages.map((msg) => (
+          {floatingMessages.map((msg) => (
             <div
               key={msg.id}
               className={`supporter-wrap ${msg.side === "right" ? "from-right" : ""}`}
