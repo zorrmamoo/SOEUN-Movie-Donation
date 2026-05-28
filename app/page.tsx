@@ -243,57 +243,63 @@ export default function Page() {
   const [cheerText, setCheerText] = useState<string>("");
   const [messages, setMessages] = useState<CheerMessage[]>([]);
   const [isMovieModalOpen, setIsMovieModalOpen] = useState<boolean>(false);
-  const [isPosterModalOpen, setIsPosterModalOpen] = useState(false);
-  const [isPosterViewerOpen, setIsPosterViewerOpen] = useState(false);
-  const [screenSize, setScreenSize] = useState<"sm" | "md" | "lg">("lg");
+  const [isPosterModalOpen, setIsPosterModalOpen] = useState<boolean>(false);
+  const [isPosterViewerOpen, setIsPosterViewerOpen] = useState<boolean>(false);
+  const [screenSize, setScreenSize] = useState<"sm" | "md" | "lg" | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    const getScreenSize = () => {
+      const width = window.innerWidth;
+
+      if (width < 576) return "sm";
+      if (width < 980) return "md";
+      return "lg";
+    };
+
     const checkScreen = () => {
-      setScreenSize(
-        window.innerWidth < 576 ? "sm" : window.innerWidth < 980 ? "md" : "lg",
-      );
+      setScreenSize(getScreenSize());
     };
 
     checkScreen();
     window.addEventListener("resize", checkScreen);
+    window.addEventListener("orientationchange", checkScreen);
 
-    console.log("initial mobile view");
-
-    return () => window.removeEventListener("resize", checkScreen);
+    return () => {
+      window.removeEventListener("resize", checkScreen);
+      window.removeEventListener("orientationchange", checkScreen);
+    };
   }, []);
 
   useEffect(() => {
-    const maxFloatingMessages =
-      screenSize === "sm" ? 4 : screenSize === "md" ? 6 : 10;
+    if (!screenSize) return;
 
-    const fetchDonationData = async () => {
+    const fetchInitialData = async () => {
       try {
-        const res = await fetch("/api/donations");
+        const maxFloatingMessages =
+          screenSize === "sm" ? 4 : screenSize === "md" ? 6 : 10;
 
-        if (!res.ok) {
+        // Fetch total
+        const donationRes = await fetch("/api/donations");
+
+        if (!donationRes.ok) {
           throw new Error("후원 금액 불러오기 실패");
         }
 
-        const data = await res.json();
-        setAmount(data.totalAmount ?? 0);
-      } catch (error) {
-        console.error(error);
-      }
-    };
+        const donationData = await donationRes.json();
+        setAmount(donationData.totalAmount ?? 0);
 
-    fetchDonationData();
+        // Fetch messages
+        const messageRes = await fetch("/api/messages");
 
-    const fetchMessages = async () => {
-      try {
-        const res = await fetch("/api/messages");
-
-        if (!res.ok) {
+        if (!messageRes.ok) {
           throw new Error("응원 메시지 불러오기 실패");
         }
 
-        const data = (await res.json()) as DonationMessageResponse[];
+        const messageData =
+          (await messageRes.json()) as DonationMessageResponse[];
 
-        const visibleDonations = data
+        const visibleDonations = messageData
           .filter((donation) => donation.message)
           .slice(-maxFloatingMessages);
 
@@ -307,15 +313,15 @@ export default function Page() {
           [],
         );
 
-        if (dbMessages.length > 0) {
-          setMessages(dbMessages);
-        }
+        setMessages(dbMessages);
       } catch (error) {
         console.error(error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    fetchMessages();
+    fetchInitialData();
   }, [screenSize]);
 
   const currentStageIndex = useMemo(() => {
@@ -426,6 +432,7 @@ export default function Page() {
         setAmount(totalData.totalAmount ?? 0);
       }
 
+      if (!screenSize) return;
       const spot = getRandomSupporterPosition(messages, screenSize);
 
       const newMessage: CheerMessage = {
@@ -474,8 +481,15 @@ export default function Page() {
     setAmountInput(value === "" ? null : Number(value));
   };
 
-  const floatingMessages = messages;
+  const floatingMessages = screenSize ? messages : [];
 
+  if (isLoading || !screenSize) {
+    return (
+      <main className="page-shell loading-screen">
+        <div className="loader"></div>
+      </main>
+    );
+  }
   return (
     <main className="page-shell">
       <div className="page-wrap">
