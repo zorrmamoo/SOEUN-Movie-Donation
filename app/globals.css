@@ -977,6 +977,48 @@ input[value="add"]:checked + .toggle-btn {
 input[value="subtract"]:checked + .toggle-btn {
   background: #c13e3e;
 }
+
+.loading-screen {
+  display: flex;
+  text-align: center;
+  justify-content: center;
+  align-items: center;
+}
+
+.loader {
+  width: 32px;
+  aspect-ratio: 1;
+  --_g: no-repeat radial-gradient(farthest-side, #fff 90%, #ffff);
+  background: var(--_g), var(--_g), var(--_g), var(--_g);
+  background-size: 40% 40%;
+  animation: l46 1s infinite;
+}
+@keyframes l46 {
+  0% {
+    background-position:
+      0 0,
+      100% 0,
+      100% 100%,
+      0 100%;
+  }
+  40%,
+  50% {
+    background-position:
+      100% 100%,
+      100% 0,
+      0 0,
+      0 100%;
+  }
+  90%,
+  100% {
+    background-position:
+      100% 100%,
+      0 100%,
+      0 0,
+      100% 0;
+  }
+}
+
 .admin-login-panel h1,
 .admin-header h1 {
   margin: 0;
